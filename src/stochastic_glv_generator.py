@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Sep 23 16:37:13 2022
 
-@author: valeriano
+"""
+@author: joaovaleriano
+
+Functions for generating and simulating generalized Lotka-Volterra systems.
+
+Also a function calculating the system's rhs' jacobian (glv_jac), for possible gradient descent optimization purposes.
 """
 
+#%%
 # packages
 
 import numpy as np
@@ -71,8 +75,8 @@ def glv_jac(t, x, p):
     return jac
 
 
-@njit
-def euler_maruyama(f, t, x, p, sig, dt, n_steps):
+# @njit
+def euler_maruyama(f, t0, x, p, sig, dt, t_eval):
     """
     euler_maruyama: Euler-Maruyama method for approximate solution of stochastic differential equations (SDEs)
     N = dimension of the system
@@ -85,23 +89,49 @@ def euler_maruyama(f, t, x, p, sig, dt, n_steps):
     sig: constant scale multiplying noise. scalar or array (N,)
     dt: size of time step for SDE integration. scalar
     n_steps: number of steps to integrate along. scalar
+    save_interval: number of dt intervals between sampling the SDE solution
 
     --- OUTPUT ---
+    t-arr: time points where the 
     x_: time-series generated as solution of the SDE
     """
     
     dt_sqrt = dt**0.5
     n = x.shape[0]
-    noise = sig*np.random.randn(n_steps, n)
-    
-    x_ = np.zeros((n_steps+1, n))
-    x_[0] = x
-    
-    for i in range(1, n_steps+1):
-        x_[i] = x_[i-1] + dt * f(t, x_[i-1], p) + dt_sqrt * x_[i-1]*noise[i-1]
-        x_[i][x_[i]<0] = 0.
-        t += dt
+    noise = sig*np.random.randn(int((t_eval[-1]-t0)/dt)+len(t_eval), n)
+
+    x_ = np.zeros((t_eval.shape[0], n))
+
+    x_now = x.copy()
+    t = t0
+
+    dt_count = 0
+    for i in range(len(t_eval)):
+        n_steps = (t_eval[i]-t)/dt
+
+        if n_steps == int(n_steps):
+            eps = n_steps - int(n_steps)
+            n_steps = int(n_steps-1)
+        else:
+            eps = 0.
+            n_steps = int(n_steps)
+
+        for j in range(n_steps):
+            x_now += dt * f(t, x_now, p) + dt_sqrt * x_now*noise[dt_count]
+            x_now[x_now < 0.] = 0.
+            t += dt
+            dt_count += 1
         
+        x_now += eps*dt * f(t, x_now, p) + eps**0.5*dt_sqrt * x_now*noise[dt_count]
+        x_now[x_now < 0.] = 0.
+        x_[i] = x_now
+
+        # x_now += (1-eps)*dt * f(t, x_now, p) + (1-eps)**0.5*dt_sqrt * x_now*noise[dt_count]
+        # x_now[x_now < 0.] = 0.
+        # t += dt
+
+        dt_count += 1
+
     return x_
 
 
