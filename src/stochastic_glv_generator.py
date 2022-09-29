@@ -4,9 +4,9 @@
 """
 @author: joaovaleriano
 
-Functions for generating and simulating generalized Lotka-Volterra systems.
+Generating and simulating generalized Lotka-Volterra systems.
 
-Also a function calculating the system's rhs' jacobian (glv_jac), for possible gradient descent optimization purposes.
+Also a function calculating the system's jacobian (glv_jac), for possible gradient descent optimization purposes.
 """
 
 
@@ -77,7 +77,7 @@ def glv_jac(t, x, p):
 
 
 @njit
-def euler_maruyama(f, t0, x, p, sig, dt, t_eval):
+def euler_maruyama(f, t0, x, p, noise, dt, t_eval):
     """
     euler_maruyama: Euler-Maruyama method for approximate solution of stochastic differential equations (SDEs)
     N = dimension of the system
@@ -87,7 +87,7 @@ def euler_maruyama(f, t0, x, p, sig, dt, t_eval):
     t: initial time. scalar
     x: initial state of the system. array (N,)
     p: parameters of the model. array (N*(N-1),)
-    sig: constant scale multiplying noise. scalar or array (N,)
+    noise: constant scale multiplying noise. scalar or array (N,)
     dt: size of time step for SDE integration. scalar
     n_steps: number of steps to integrate along. integer
     save_interval: number of dt intervals between sampling the SDE solution. integer
@@ -98,7 +98,7 @@ def euler_maruyama(f, t0, x, p, sig, dt, t_eval):
     
     dt_sqrt = dt**0.5
     n = x.shape[0]
-    noise = sig*np.random.randn(int((t_eval[-1]-t0)/dt)+len(t_eval), n)
+    noise = noise*np.random.randn(int((t_eval[-1]-t0)/dt)+len(t_eval), n)
 
     x_ = np.zeros((t_eval.shape[0], n))
 
@@ -125,10 +125,6 @@ def euler_maruyama(f, t0, x, p, sig, dt, t_eval):
         x_now += eps*dt * f(t, x_now, p) + eps**0.5*dt_sqrt * x_now*noise[dt_count]
         x_now[x_now < 0.] = 0.
         x_[i] = x_now
-
-        # x_now += (1-eps)*dt * f(t, x_now, p) + (1-eps)**0.5*dt_sqrt * x_now*noise[dt_count]
-        # x_now[x_now < 0.] = 0.
-        # t += dt
 
         dt_count += 1
 
