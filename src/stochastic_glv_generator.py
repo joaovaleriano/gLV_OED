@@ -9,12 +9,13 @@ Functions for generating and simulating generalized Lotka-Volterra systems.
 Also a function calculating the system's rhs' jacobian (glv_jac), for possible gradient descent optimization purposes.
 """
 
+
 #%%
 # packages
 
 import numpy as np
-import matplotlib.pyplot as plt
 from numba import njit
+
 
 #%%
 # functions
@@ -32,7 +33,7 @@ def glv(t, x, p):
        -> p[N:]: flattened interaction matrix
 
     --- OUTPUT ---
-    rhs: right-hand-side of gLV
+    rhs: right-hand-side of gLV. array (N,)
     """
 
     n = x.shape[0]
@@ -57,7 +58,7 @@ def glv_jac(t, x, p):
        -> p[N:]: flattened interaction matrix
 
     --- OUTPUT ---
-    jac: jacobian matrix of the gLV system for given state (x) and parameters (p)
+    jac: jacobian matrix of the gLV system for given state x and parameters p. array (N, N*(N-1),)
     """
 
     n = x.shape[0]
@@ -85,15 +86,14 @@ def euler_maruyama(f, t0, x, p, sig, dt, t_eval):
     f: rhs of SDE. function f(t, x, p)
     t: initial time. scalar
     x: initial state of the system. array (N,)
-    p: parameters of the model. array
+    p: parameters of the model. array (N*(N-1),)
     sig: constant scale multiplying noise. scalar or array (N,)
     dt: size of time step for SDE integration. scalar
-    n_steps: number of steps to integrate along. scalar
-    save_interval: number of dt intervals between sampling the SDE solution
+    n_steps: number of steps to integrate along. integer
+    save_interval: number of dt intervals between sampling the SDE solution. integer
 
     --- OUTPUT ---
-    t-arr: time points where the 
-    x_: time-series generated as solution of the SDE
+    x_: time-series generated as solution of the SDE. array (len(t_eval), N,)
     """
     
     dt_sqrt = dt**0.5
@@ -144,13 +144,13 @@ def sort_glv_params(n, seed, r_max, A_diag_std, A_off_diag_std):
 
     --- INPUT ---
     n: number of species. scalar
-    seed: random seed to initialize parameters
-    r_max: maximum growth rate
-    A_diag_std: standard deviation for distribution of intraspecies interactions
-    A_off)diag_std: standard deviation for distribution of interspecies interactions
+    seed: random seed to initialize parameters. integer
+    r_max: maximum growth rate. scalar
+    A_diag_std: standard deviation for distribution of intraspecies interactions. scalar
+    A_off_diag_std: standard deviation for distribution of interspecies interactions. scalar
 
     --- OUTPUT ---
-    p: chosen parameter set
+    p: chosen parameter set. array (N*(N-1),)
     """
 
     np.random.seed(seed)
