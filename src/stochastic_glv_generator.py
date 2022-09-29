@@ -76,7 +76,7 @@ def glv_jac(t, x, p):
     return jac
 
 
-# @njit
+@njit
 def euler_maruyama(f, t0, x, p, sig, dt, t_eval):
     """
     euler_maruyama: Euler-Maruyama method for approximate solution of stochastic differential equations (SDEs)
