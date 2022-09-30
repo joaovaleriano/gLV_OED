@@ -21,6 +21,10 @@ from numba import njit
 # functions
 
 @njit
+def set_nb_seed(seed):
+    np.random.seed(seed)
+
+@njit
 def glv(t, x, p):
     """
     glv: right-hand-side of generalized Lotka-Volterra model ODE describing N interacting species
@@ -77,7 +81,7 @@ def glv_jac(t, x, p):
 
 
 @njit
-def euler_maruyama(f, t0, x, p, noise, dt, t_eval):
+def euler_maruyama(f, t0, x, p, noise_scale, dt, t_eval, seed=0):
     """
     euler_maruyama: Euler-Maruyama method for approximate solution of stochastic differential equations (SDEs)
     N = dimension of the system
@@ -98,7 +102,9 @@ def euler_maruyama(f, t0, x, p, noise, dt, t_eval):
     
     dt_sqrt = dt**0.5
     n = x.shape[0]
-    noise = noise*np.random.randn(int((t_eval[-1]-t0)/dt)+len(t_eval), n)
+    
+    np.random.seed(seed)
+    noise = noise_scale*np.random.randn(int((t_eval[-1]-t0)/dt)+len(t_eval), n)
 
     x_ = np.zeros((t_eval.shape[0], n))
 
@@ -151,9 +157,9 @@ def sort_glv_params(n, seed, r_max, A_diag_std, A_off_diag_std):
 
     np.random.seed(seed)
     r = np.random.uniform(0, r_max, n)
-    A = np.random.normal(size=(n,n))
+    A = np.random.normal(scale=A_off_diag_std, size=(n,n))
     for i in range(n):
-        A[i,i] = -np.abs(np.random.normal(10))
+        A[i,i] = -np.abs(np.random.normal(A_diag_std))
 
     mat_c = 0
     while (-np.linalg.inv(A)@r < 0).any() or (np.linalg.eig(-np.linalg.inv(A)@r.reshape((-1,1))*A)[0]>0).any():
