@@ -16,6 +16,7 @@ from numba import njit
 import pandas as pd
 from datetime import datetime
 from stochastic_glv_generator import *
+import os
 
 
 #%%
@@ -62,12 +63,13 @@ def gen_experiment(p, init_perturb, t0, dt, t_samp, env_noise, meas_noise, pertu
     x_eq = -np.linalg.inv(A)@r
 
     np.random.seed(perturb_seed)
-    x0 = x_eq + np.random.normal(init_perturb*x_eq, init_perturb*x_eq/10)
+    x0 = x_eq * (1 + init_perturb)
+    x0[x0<0.] = 0.
 
     system = euler_maruyama(glv, t0, x0, p, env_noise, dt, t_samp, env_seed)
 
     if scale_meas_noise_by_abund:
-        scaled_meas_noise = meas_noise*data.mean(axis=0)
+        scaled_meas_noise = meas_noise*system.mean(axis=0)
     else:
         scaled_meas_noise = meas_noise
 
@@ -76,7 +78,7 @@ def gen_experiment(p, init_perturb, t0, dt, t_samp, env_noise, meas_noise, pertu
     return data
 
 
-def gen_replicates(p, env_noise, init_perturb_list, t0, dt, t_samp_list, meas_noise_list, repetitions, seed=0, scale_meas_noise_by_abund=True, save_datasets=False, save_loc=""):
+def gen_replicates(p, env_noise, init_perturb, perturb_scale_list, t0, dt, t_samp_list, meas_noise_list, repetitions, seed=0, scale_meas_noise_by_abund=True, save_datasets=False, save_loc=""):
     """
     replicates: generates multiple replicates of an experiment varying initial conditions,
     sampling strategy, and environmental and measurement noise intensity.
@@ -95,11 +97,22 @@ def gen_replicates(p, env_noise, init_perturb_list, t0, dt, t_samp_list, meas_no
     dataframe: pandas DataFrame containing time-series of all generated replicates. pandas.DataFrame
     """
 
+    if save_datasets:
+        if save_loc == "":
+            save_loc = os.getcwd()
+
+        if "datasets" not in save_loc:
+            os.mkdir(f"{save_loc}/datasets")
+
+        if "metadata" not in save_loc:
+            os.mkdir(f"{save_loc}/metadata")
+
+
     n = int((np.sqrt(1+4*len(p))-1)/2)
 
     datasets = []
     
-    n_replicates = len(t_samp_list)*len(meas_noise_list)*len(init_perturb_list)*repetitions
+    n_replicates = len(t_samp_list)*len(meas_noise_list)*len(perturb_scale_list)*repetitions
 
     np.random.seed(seed)
     perturb_seeds = np.random.randint(0, 10**9, n_replicates)
@@ -108,31 +121,36 @@ def gen_replicates(p, env_noise, init_perturb_list, t0, dt, t_samp_list, meas_no
 
     repl_c = 0
 
-    for init_perturb in init_perturb_list:
+    for perturb_scale in perturb_scale_list:
         for t_samp in t_samp_list:
             for meas_noise in meas_noise_list:            
                 for rep in range(repetitions):
-                    
-                    data = gen_experiment(p, init_perturb, t0, dt, t_samp, env_noise, meas_noise, perturb_seeds[repl_c], env_seeds[repl_c], meas_seeds[repl_c], True)
+                    data = gen_experiment(p, perturb_scale*init_perturb, t0, dt, t_samp, env_noise, meas_noise, perturb_seeds[repl_c], env_seeds[repl_c], meas_seeds[repl_c], True)
 
-                    datasets.append(np.hstack((np.array([repl_c, init_perturb, meas_noise])*np.ones((t_samp.shape[0], 3), dtype=int), t_samp.reshape((-1, 1)), data)))
+                    datasets.append(np.hstack((np.array([repl_c, perturb_scale, meas_noise])*np.ones((t_samp.shape[0], 3), dtype=int), t_samp.reshape((-1, 1)), data)))
 
                     repl_c += 1
 
                     print("\r"+" "*100, end="")
-                    print("\r" + f"{repl_c+1}/{n_replicates}", end="")
+                    print("\r" + f"{repl_c}/{n_replicates}", end="")
 
     datasets = np.vstack(datasets)
 
-    cols = ["dataset", "initial_perturbation", "measurement_noise", "time"] + [f"sp{i}" for i in range(1, n+1)]
+    cols = ["dataset", "perturbation_scale", "measurement_noise", "time"] + [f"sp{i}" for i in range(1, n+1)]
 
     dataframe = pd.DataFrame(data=datasets, columns=cols)
 
     if save_datasets:
         datetime_now = str(datetime.now()).split(".")[0].replace("-", "").replace(":", "").replace(" ", "-")
-        dataframe.to_csv(f"{save_loc}/dataset{datetime_now}.csv")
+        dataframe.to_csv(f"{save_loc}/datasets/dataset{datetime_now}.csv")
 
-        # metadata_file = open(f"{save_loc}/metadata{datetime_now}.txt", "w")
-        # metadata = [f""]
+        metadata_file = open(f"{save_loc}/metadata/metadata{datetime_now}.txt", "w")
+        metadata_file.write(f"parameters: "+",".join([str(i) for i in p]))
+        metadata_file.write(f"t0: {t0}")
+        metadata_file.write(f"dt: {dt}")
+        metadata_file.write(f"\nseed: {seed}")
+        metadata_file.write(f"\nscale_meas_noise_by_abund: {scale_meas_noise_by_abund}")
+        metadata_file.close()
+
 
     return dataframe
