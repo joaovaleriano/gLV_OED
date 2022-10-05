@@ -146,8 +146,9 @@ def gen_replicates(p, env_noise, init_perturb, perturb_scale_list, t0, dt, t_sam
 
         metadata_file = open(f"{save_loc}/metadata/metadata{datetime_now}.txt", "w")
         metadata_file.write(f"parameters: "+",".join([str(i) for i in p]))
-        metadata_file.write(f"t0: {t0}")
-        metadata_file.write(f"dt: {dt}")
+        metadata_file.write(f"\ninit_perturb: "+",".join([str(i) for i in init_perturb]))
+        metadata_file.write(f"\nt0: {t0}")
+        metadata_file.write(f"\ndt: {dt}")
         metadata_file.write(f"\nseed: {seed}")
         metadata_file.write(f"\nscale_meas_noise_by_abund: {scale_meas_noise_by_abund}")
         metadata_file.close()
