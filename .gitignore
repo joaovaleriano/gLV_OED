@@ -1,2 +1,3 @@
 src/__pycache__
-output
+experiment_outputs
+notebooks/experiment_outputs
