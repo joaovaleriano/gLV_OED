@@ -101,10 +101,10 @@ def gen_replicates(p, env_noise, init_perturb, perturb_scale_list, t0, dt, t_sam
         if save_loc == "":
             save_loc = os.getcwd()
 
-        if "datasets" not in save_loc:
+        if "datasets" not in os.listdir(save_loc):
             os.mkdir(f"{save_loc}/datasets")
 
-        if "metadata" not in save_loc:
+        if "metadata" not in os.listdir(save_loc):
             os.mkdir(f"{save_loc}/metadata")
 
 
