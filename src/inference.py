@@ -9,7 +9,9 @@ Implementation of inference methods
 
 #%%
 # packages
+
 import numpy as np
+from numba import njit
 import pandas as pd
 from analysis import *
 from sklearn import linear_model as lm
@@ -89,3 +91,15 @@ def fit_elasticnet_cv(df, averaging="none"):
 #%%
 # gradient descent optimization
 
+@njit
+def mse_grad_p(x, x_grad_p, dydt):
+    return 2*(np.expand_dims(x-dydt, -1)*x_grad_p).mean((0, 1))
+
+
+@njit
+def rmsprop_step(mse_grad_p, p, alpha, gamma, eps, Eg2):
+    g = np.copy(mse_grad_p)
+    Eg2 = gamma*Eg2 + (1-gamma)*g*g
+    p -= alpha/(Eg2+eps)**0.5*g
+
+    return p, Eg2
