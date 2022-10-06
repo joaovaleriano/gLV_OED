@@ -11,84 +11,81 @@ Implementation of inference methods
 # packages
 import numpy as np
 import pandas as pd
+from analysis import *
 from sklearn import linear_model as lm
 
 #%%
-# calculate rhs of gLV model
+# linear regression w/ different regularizations
 
-def add_glv_rhs(df):
-    species = [i for i in df.columns if i[:2]=="sp"]
-    n_sp = len(species)
+def fit_lr(df, averaging="none"):
+    add_log_glv_rhs(df)
 
-    datasets = df["dataset"].unique()
+    reg = lm.LinearRegression()
 
-    dspdt_cols = [f"d{i}/dt" for i in species]
-    df[dspdt_cols] = np.nan
+    if averaging == "none":
+        y = df.dropna()[[i for i in df.columns if i[:2]=="sp"]].values
 
-    for i in datasets:
-        dataset = df[df["dataset"]==i]
-        idxs = dataset.iloc[:-1].index
-        y = dataset[species].values
-        t = dataset["time"].values
+    elif averaging == "arithm":
+        add_arithm_mean(df)
+        y = df.dropna()[[i for i in df.columns if i[:14]=="arithm_mean_sp"]].values
 
-        dydt = np.diff(y, axis=0)/np.diff(t).reshape((-1,1))
+    elif averaging == "geom":
+        add_geom_mean(df)
+        y = df.dropna()[[i for i in df.columns if i[:12]=="geom_mean_sp"]].values
 
-        df.loc[idxs, dspdt_cols] = dydt
+    dlogydt = df.dropna()[[i for i in df.columns if i[:6]=="dlogsp"]].values
 
+    reg.fit(y, dlogydt)
 
-def add_log_glv_rhs(df):
-    species = [i for i in df.columns if i[:2]=="sp"]
-    n_sp = len(species)
-
-    datasets = df["dataset"].unique()
-
-    dlogspdt_cols = [f"dlog{i}/dt" for i in species]
-    df[dlogspdt_cols] = np.nan
-
-    for i in datasets:
-        dataset = df[df["dataset"]==i]
-        idxs = dataset.iloc[:-1].index
-        y = dataset[species].values
-        t = dataset["time"].values
-
-        dydt = np.diff(np.log(y), axis=0)/np.diff(t).reshape((-1,1))
-
-        df.loc[idxs, dlogspdt_cols] = dydt
+    return reg.intercept_, reg.coef_
 
 
-def add_arithm_mean(df):
-    species = [i for i in df.columns if i[:2]=="sp"]
-    n_sp = len(species)
+def fit_ridge_cv(df, averaging="none"):
+    add_log_glv_rhs(df)
 
-    datasets = df["dataset"].unique()
+    reg = lm.RidgeCV(alphas=10.**np.arange(-5, 3))
 
-    arithm_mean_cols = [f"arith_mean_{i}" for i in species]
-    df[arithm_mean_cols] = np.nan
+    if averaging == "none":
+        y = df.dropna()[[i for i in df.columns if i[:2]=="sp"]].values
 
-    for i in datasets:
-        dataset = df[df["dataset"]==i]
-        idxs = dataset.iloc[:-1].index
-        y = dataset[species].values
+    elif averaging == "arithm":
+        add_arithm_mean(df)
+        y = df.dropna()[[i for i in df.columns if i[:14]=="arithm_mean_sp"]].values
 
-        y_arithm = (y[1:]+y[:-1])/2
+    elif averaging == "geom":
+        add_geom_mean(df)
+        y = df.dropna()[[i for i in df.columns if i[:12]=="geom_mean_sp"]].values
 
-        df.loc[idxs, arithm_mean_cols] = y_arithm
+    dlogydt = df.dropna()[[i for i in df.columns if i[:6]=="dlogsp"]].values
+
+    reg.fit(y, dlogydt)
+
+    return reg.intercept_, reg.coef_
 
 
-def add_geom_mean(df):
-    species = [i for i in df.columns if i[:2]=="sp"]
-    n_sp = len(species)
+def fit_elasticnet_cv(df, averaging="none"):
+    add_log_glv_rhs(df)
 
-    datasets = df["dataset"].unique()
+    reg = lm.MultiTaskElasticNetCV(alphas=10.**np.arange(-5, 3))
 
-    geom_mean_cols = [f"geom_mean_{i}" for i in species]
-    df[geom_mean_cols] = np.nan
+    if averaging == "none":
+        y = df.dropna()[[i for i in df.columns if i[:2]=="sp"]].values
 
-    for i in datasets:
-        dataset = df[df["dataset"]==i]
-        idxs = dataset.iloc[:-1].index
-        y = dataset[species].values
+    elif averaging == "arithm":
+        add_arithm_mean(df)
+        y = df.dropna()[[i for i in df.columns if i[:14]=="arithm_mean_sp"]].values
 
-        y_geom = np.sqrt(y[1:]*y[:-1])
+    elif averaging == "geom":
+        add_geom_mean(df)
+        y = df.dropna()[[i for i in df.columns if i[:12]=="geom_mean_sp"]].values
 
-        df.loc[idxs, geom_mean_cols] = y_geom
+    dlogydt = df.dropna()[[i for i in df.columns if i[:6]=="dlogsp"]].values
+
+    reg.fit(y, dlogydt)
+
+    return reg.intercept_, reg.coef_
+
+
+#%%
+# gradient descent optimization
+
