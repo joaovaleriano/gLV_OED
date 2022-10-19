@@ -21,7 +21,7 @@ from sklearn import linear_model as lm
 # linear regression w/ different regularizations
 
 def fit_lr(df, averaging="none"):
-    add_log_glv_rhs(df)
+    add_log_time_diff(df)
 
     reg = lm.LinearRegression()
 
@@ -44,7 +44,7 @@ def fit_lr(df, averaging="none"):
 
 
 def fit_ridge_cv(df, averaging="none"):
-    add_log_glv_rhs(df)
+    add_log_time_diff(df)
 
     reg = lm.RidgeCV(alphas=10.**np.arange(-5, 3))
 
@@ -67,7 +67,7 @@ def fit_ridge_cv(df, averaging="none"):
 
 
 def fit_elasticnet_cv(df, averaging="none"):
-    add_log_glv_rhs(df)
+    add_log_time_diff(df)
 
     reg = lm.MultiTaskElasticNetCV(alphas=10.**np.arange(-5, 3))
 
