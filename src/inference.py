@@ -11,7 +11,7 @@ Implementation of inference methods
 # packages
 
 import numpy as np
-from numba import njit
+from numba import jit, njit
 import pandas as pd
 from stochastic_glv_generator import *
 from analysis import *
@@ -93,8 +93,21 @@ def fit_elasticnet_cv(df, averaging="none"):
 # gradient descent optimization
 
 @njit
+def mse(rhs, dydt):
+    return ((rhs-dydt)**2).mean()
+
+
+@njit
 def mse_grad_p(rhs, rhs_grad_p, dydt):
-    return 2*(np.expand_dims(rhs-dydt, -1)*rhs_grad_p).mean((0, 1))
+    a = 2*(np.expand_dims(rhs-dydt, -1)*rhs_grad_p)
+
+    r = np.zeros(rhs_grad_p.shape[-1])
+
+    for i in range(rhs.shape[0]):
+        for j in range(rhs.shape[1]):
+            r += a[i,j]
+
+    return r
 
 
 @njit
@@ -106,9 +119,10 @@ def glv_and_jac_time(t, x, p):
     
     for i in range(len(t)):
         x_t[i] = glv(t[i], x[i], p)
-        x_grad_p_t[i] = glv_jac(t[i], x[i], p)[1]
+        x_grad_p_t[i] = glv_jac(t[i], x[i], p)
         
-    return np.array(x_t), np.array(x_grad_p_t)
+    return x_t, x_grad_p_t
+
 
 @njit
 def jac_time(t, x, p):
@@ -117,33 +131,35 @@ def jac_time(t, x, p):
     x_grad_p_t = np.zeros((len(t), n, n*(n+1)))
     
     for i in range(len(t)):
-        x_grad_p_t[i] = glv_jac(t[i], x[i], p)[1]
+        x_grad_p_t[i] = glv_jac(t[i], x[i], p)
         
     return x_grad_p_t
 
 
-@njit
-def mini_batch_sgd_rmsprop(df, p, alpha, gamma, eps, Eg2, batch_size, averaging="none"):
+def mini_batch_sgd_rmsprop(df, p_, alpha, gamma, eps, Eg2, batch_size, averaging="none"):
+    p = np.copy(p_)
+
     if averaging == "none":
-        y = df.dropna()[[i for i in df.columns if i[:2]=="sp"]]
+        y = df.dropna()[[i for i in df.columns if i[:2]=="sp"]].values
 
     elif averaging == "arithm":
         add_arithm_mean(df)
-        y = df.dropna()[[i for i in df.columns if i[:14]=="arithm_mean_sp"]]
+        y = df.dropna()[[i for i in df.columns if i[:14]=="arithm_mean_sp"]].values
 
     elif averaging == "geom":
         add_geom_mean(df)
-        y = df.dropna()[[i for i in df.columns if i[:12]=="geom_mean_sp"]]
+        y = df.dropna()[[i for i in df.columns if i[:12]=="geom_mean_sp"]].values
 
     t = df.dropna()["time"].values
-
-    add_glv_rhs(df)
     
-    dydt = df.dropna()[[i for i in df.columns if i[:6]=="dlogsp"]]
+    dydt = df.dropna()[[i for i in df.columns if i[:6]=="dlogsp"]].values
 
     idxs = list(np.arange(t.shape[0]-1))
-    
+
     np.random.shuffle(idxs)
+
+    if batch_size > len(idxs):
+        batch_size = len(idxs)
 
     n_batches = len(idxs)/batch_size
     if np.ceil(n_batches) - n_batches == 0:

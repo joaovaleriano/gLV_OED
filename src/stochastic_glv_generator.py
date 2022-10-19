@@ -30,7 +30,7 @@ def glv(t, x, p):
     glv: right-hand-side of generalized Lotka-Volterra model ODE describing N interacting species
 
     --- INPUT ---
-    t: time points to evaluate function. scalar
+    t: time point to evaluate function. scalar
     x: species abundances. array (N,)
     p: model parameters. array (N*(N+1),)
        -> p[:N]: growth rates
@@ -47,6 +47,34 @@ def glv(t, x, p):
     rhs = x * (r + np.dot(A, x))
 
     return rhs
+
+
+@njit
+def glv_time(t, x, p):
+    """
+    glv: right-hand-side of generalized Lotka-Volterra model ODE describing N interacting species, for multiple time points.
+
+    --- INPUT ---
+    t: time points to evaluate function. array (M,)
+    x: species abundances. array (M, N,)
+    p: model parameters. array (N*(N+1),)
+       -> p[:N]: growth rates
+       -> p[N:]: flattened interaction matrix
+
+    --- OUTPUT ---
+    rhs: right-hand-side of gLV. array (M, N,)
+    """
+
+    n = x.shape[1]
+    r = p[:n]
+    A = p[n:].reshape((n, n))
+    
+    rhs_time = np.zeros((t.shape[0], x.shape[1]))
+
+    for i in range(t.shape[0]):
+        rhs_time[i] = x[i] * (r + np.dot(A, x[i]))
+
+    return rhs_time
 
 
 @njit

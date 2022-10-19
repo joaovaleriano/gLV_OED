@@ -11,14 +11,14 @@ Analysis of the dataset to calculate the (log) time derivatives and arithmetic a
 # packages
 import numpy as np
 import pandas as pd
+from stochastic_glv_generator import glv_time
 from sklearn import linear_model as lm
 
 #%%
 # manipulations of dataset
 
-def add_glv_rhs(df):
+def add_time_diff(df):
     species = [i for i in df.columns if i[:2]=="sp"]
-    n_sp = len(species)
 
     datasets = df["dataset"].unique()
 
@@ -36,9 +36,8 @@ def add_glv_rhs(df):
         df.loc[idxs, dspdt_cols] = dydt
 
 
-def add_log_glv_rhs(df):
+def add_log_time_diff(df):
     species = [i for i in df.columns if i[:2]=="sp"]
-    n_sp = len(species)
 
     datasets = df["dataset"].unique()
 
@@ -54,6 +53,25 @@ def add_log_glv_rhs(df):
         dydt = np.diff(np.log(y), axis=0)/np.diff(t).reshape((-1,1))
 
         df.loc[idxs, dlogspdt_cols] = dydt
+
+
+def add_glv_rhs(df, p):
+    species = [i for i in df.columns if i[:2]=="sp"]
+
+    datasets = df["dataset"].unique()
+
+    glv_rhs_cols = [f"glv_rhs_{i}" for i in species]
+    df[glv_rhs_cols] = np.nan
+
+    for i in datasets:
+        dataset = df[df["dataset"]==i]
+        idxs = dataset.iloc[:-1].index
+        y = dataset[species].values
+        t = dataset["time"].values
+
+        rhs = glv_time(t[:-1], y[:-1], p)
+
+        df.loc[idxs, glv_rhs_cols] = rhs
 
 
 def add_arithm_mean(df):
