@@ -107,7 +107,7 @@ def mse_grad_p(rhs, rhs_grad_p, dydt):
         for j in range(rhs.shape[1]):
             r += a[i,j]
 
-    return r
+    return r/(rhs.shape[0]*rhs.shape[1])
 
 
 @njit
@@ -125,7 +125,7 @@ def glv_and_jac_time(t, x, p):
 
 
 @njit
-def jac_time(t, x, p):
+def glv_jac_time(t, x, p):
     n = x.shape[1]
 
     x_grad_p_t = np.zeros((len(t), n, n*(n+1)))
