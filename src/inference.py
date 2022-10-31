@@ -16,6 +16,8 @@ import pandas as pd
 from stochastic_glv_generator import *
 from analysis import *
 from sklearn import linear_model as lm
+from scipy.optimize import curve_fit
+from tqdm import tqdm
 
 #%%
 # linear regression w/ different regularizations
@@ -175,3 +177,29 @@ def mini_batch_sgd_rmsprop(df, p_, alpha, gamma, eps, Eg2, batch_size, averaging
         p -= alpha/(Eg2+eps)**0.5*g
     
     return p, Eg2
+
+
+#%%
+# Levenberg-Marquardt gradient matching
+
+def glv_for_fit(x, *p):
+    n = int((np.sqrt(1+4*len(p))-1)/2)
+
+    x_= x.copy()
+
+    r = np.array(p[:n])
+    A = np.array(p[n:]).reshape((n, n))
+
+    rhs = x_*(r + np.dot(x_, A.T))
+
+    return rhs.flatten()
+
+
+def lm_fit(f, x, y, p0_list, sig=None, maxfev=400):
+    p_list = np.zeros_like(p0_list)
+
+    for i in tqdm(range(p0_list.shape[0])):
+        p_list[i] = curve_fit(f, x, y, p0_list[i], sigma=sig, maxfev=maxfev)[0]
+
+    return p_list
+
