@@ -112,7 +112,7 @@ def gen_experiment(p, init_cond, t0, dt, t_samp, env_noise, meas_noise, env_seed
     return data
 
 
-def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise_list, repetitions, seed=0, scale_meas_noise_by_abund=True, save_datasets=False, save_loc=""):
+def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise_list, repetitions, seed=0, scale_meas_noise_by_abund=True, save_datasets=False, save_loc="", save_name="datetime"):
     """
     replicates: generates multiple replicates of an experiment varying initial conditions,
     sampling strategy, and environmental and measurement noise intensity.
@@ -185,10 +185,18 @@ def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise
 
     dataframe = pd.DataFrame(data=datasets, columns=cols)
     if save_datasets:
-        datetime_now = str(datetime.now()).split(".")[0].replace("-", "").replace(":", "").replace(" ", "-")
-        dataframe.to_csv(f"{save_loc}/datasets/dataset{datetime_now}.csv")
+        if save_name == "datetime":
+            datetime_now = str(datetime.now()).split(".")[0].replace("-", "").replace(":", "").replace(" ", "-")
+        
+            datetime_repeat = sum([datetime_now in os.listdir(f"save_loc/datasets")])
+            if datetime_repeat > 0:
+                save_name = f"{datetime_now}-{datetime_repeat}"
+            else:
+                save_name = datetime_now
 
-        metadata_file = open(f"{save_loc}/metadata/metadata{datetime_now}.txt", "w")
+        dataframe.to_csv(f"{save_loc}/datasets/dataset{save_name}.csv")
+
+        metadata_file = open(f"{save_loc}/metadata/metadata{save_name}.txt", "w")
         metadata_file.write(f"initial conditions:")
         for init_cond in init_cond_list:
             metadata_file.write("\n"+",".join([str(i) for i in init_cond]))
