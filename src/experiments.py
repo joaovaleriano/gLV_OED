@@ -137,7 +137,12 @@ def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise
 
     if save_datasets:
         if save_loc == "":
-            save_loc = os.getcwd()+"/../experiment_outputs"
+            datetime_now = str(datetime.now()).split(".")[0].replace("-", "").replace(":", "").replace(" ", "-")
+            save_loc = datetime_now
+
+        if save_loc not in os.listdir(os.getcwd()+"/../experiment_outputs"):
+            os.mkdir(os.getcwd()+"/../experiment_outputs/"+save_loc)
+        save_loc = os.getcwd()+"/../experiment_outputs/"+save_loc
 
         if "datasets" not in os.listdir(save_loc):
             os.mkdir(f"{save_loc}/datasets")
@@ -170,15 +175,15 @@ def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise
 
                     repl_c += 1
 
-                    print("\r"+" "*100, end="")
-                    print("\r" + f"{repl_c}/{n_replicates}", end="")
+                    # print("\r"+" "*100, end="")
+                    # print("\r" + f"{repl_c}/{n_replicates}", end="")
 
     datasets = np.vstack(datasets)
 
     cols = ["dataset", "measurement_noise", "time", "dt"] + [f"sp{i}" for i in range(1, n+1)]
 
-    dataframe = pd.DataFrame(data=datasets, columns=cols)
 
+    dataframe = pd.DataFrame(data=datasets, columns=cols)
     if save_datasets:
         datetime_now = str(datetime.now()).split(".")[0].replace("-", "").replace(":", "").replace(" ", "-")
         dataframe.to_csv(f"{save_loc}/datasets/dataset{datetime_now}.csv")
