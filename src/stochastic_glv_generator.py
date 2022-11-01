@@ -23,7 +23,7 @@ from numba import njit
 @njit
 def set_nb_seed(seed):
     np.random.seed(seed)
-    
+
 
 @njit
 def glv(t, x, p):
@@ -166,7 +166,7 @@ def euler_maruyama(f, t0, x, p, noise_scale, dt, t_eval, seed=0):
     return x_
 
 
-def sort_glv_params(n, seed, r_max, A_diag_std, A_off_diag_std):
+def sort_glv_params(n, seed, r_max, A_diag_mean, A_diag_std, A_off_diag_std):
     """
     sort_glv_params: sorts parameters that lead to a stable gLV system
     growth rates are sorted uniformly between 0 and r_max
@@ -187,16 +187,15 @@ def sort_glv_params(n, seed, r_max, A_diag_std, A_off_diag_std):
     np.random.seed(seed)
     r = np.random.uniform(0, r_max, n)
     A = np.random.normal(scale=A_off_diag_std, size=(n,n))
-    for i in range(n):
-        A[i,i] = -np.abs(np.random.normal(A_diag_std))
+    A -= np.eye(n)*A + np.diag(np.random.normal(A_diag_mean, A_diag_std, n))
 
     mat_c = 0
     while (-np.linalg.inv(A)@r < 0).any() or (np.linalg.eig(-np.linalg.inv(A)@r.reshape((-1,1))*A)[0]>0).any():
         mat_c += 1
-        print(f"\rnew matrix {mat_c}", end="")
-        A = np.random.normal(0, size=(n,n))
-        for i in range(n):
-            A[i,i] = -np.abs(np.random.normal(3, 0.1))
+        
+        # print(f"generating stable matrix ... {mat_c}", end="")
+        A = np.random.normal(scale=A_off_diag_std, size=(n,n))
+        A -= np.eye(n)*A + np.diag(np.random.normal(A_diag_mean, A_diag_std, n))
 
     p = np.concatenate((r, A.flatten()))
 
