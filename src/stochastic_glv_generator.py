@@ -23,6 +23,7 @@ from numba import njit
 @njit
 def set_nb_seed(seed):
     np.random.seed(seed)
+    
 
 @njit
 def glv(t, x, p):
