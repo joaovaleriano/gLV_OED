@@ -38,7 +38,10 @@ env_noise_list = [0., 0.05, 0.1, 0.2]
 meas_noise_list = [0.1, 0.05, 0.1, 0.2]
 
 n_init_cond = 20
+
+perturb_exp_base = 2.
 perturb_scale_and_sigma = [-0.5, 1]
+
 repetitions = 1
 
 t0 = 0.
@@ -72,7 +75,7 @@ for i in range(len(n_sp)):
         A = p[n_sp[i]:].reshape((n_sp[i], n_sp[i]))
         x_eq = -np.linalg.inv(A)@r
 
-        init_cond_list = init_cond_by_perturb(x_eq, 2, perturb_scale_and_sigma, n_init_cond)
+        init_cond_list = init_cond_by_perturb(x_eq, perturb_exp_base, perturb_scale_and_sigma, n_init_cond)
 
         for k in range(len(env_noise_list)):
             env_noise = env_noise_list[k]
