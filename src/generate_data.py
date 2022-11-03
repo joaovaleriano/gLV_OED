@@ -79,6 +79,7 @@ for i in range(len(n_sp)):
 
         for k in range(len(env_noise_list)):
             env_noise = env_noise_list[k]
-            save_name = f"{n_sp[i]}_sp{j}_env_noise{env_noise}"
-            gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise_list, repetitions, seed=k, scale_meas_noise_by_abund=True, save_datasets=True, save_loc="test", save_name=save_name)
+            save_name = f"{n_sp[i]}_sp{params_seeds[j]}_env_noise{env_noise}"
+            gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise_list, repetitions, 
+            seed=k, scale_meas_noise_by_abund=True, save_datasets=True, save_loc="test", save_name=save_name)
 
