@@ -135,14 +135,16 @@ def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise
     dataframe: pandas DataFrame containing time-series of all generated replicates. pandas.DataFrame
     """
 
+    current_file_path = os.path.dirname(__file__)
+
     if save_datasets:
         if save_loc == "":
             datetime_now = str(datetime.now()).split(".")[0].replace("-", "").replace(":", "").replace(" ", "-")
             save_loc = datetime_now
 
         if save_loc not in os.listdir(os.getcwd()+"/../experiment_outputs"):
-            os.mkdir(os.getcwd()+"/../experiment_outputs/"+save_loc)
-        save_loc = os.getcwd()+"/../experiment_outputs/"+save_loc
+            os.mkdir(current_file_path+"/../experiment_outputs/"+save_loc)
+        save_loc = current_file_path+"/../experiment_outputs/"+save_loc
 
         if "datasets" not in os.listdir(save_loc):
             os.mkdir(f"{save_loc}/datasets")
