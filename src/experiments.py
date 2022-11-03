@@ -36,12 +36,12 @@ def init_cond_by_growth(x_eq, scale_list, n):
     return init_cond_list
 
 
-def init_cond_by_perturb(x_eq, base, scale_and_sigma_list, n):
+def init_cond_by_perturb(x_eq, base, scale_and_sigma, n):
     n_sp = len(x_eq)
     init_cond_list = []
 
-    for i, scale_and_sigma in enumerate(scale_and_sigma_list):
-        perturb_effect = base**np.random.normal(*scale_and_sigma, len(x_eq))
+    for i in range(n):
+        perturb_effect = base**np.random.normal(*scale_and_sigma, n_sp)
 
         init_cond_list.append(x_eq*perturb_effect)
 
