@@ -152,7 +152,6 @@ def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise
         if "metadata" not in os.listdir(save_loc):
             os.mkdir(f"{save_loc}/metadata")
 
-
     n = int((np.sqrt(1+4*len(p))-1)/2)
 
     datasets = []
@@ -177,13 +176,9 @@ def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise
 
                     repl_c += 1
 
-                    # print("\r"+" "*100, end="")
-                    # print("\r" + f"{repl_c}/{n_replicates}", end="")
-
     datasets = np.vstack(datasets)
 
     cols = ["dataset", "measurement_noise", "time", "dt"] + [f"sp{i}" for i in range(1, n+1)]
-
 
     dataframe = pd.DataFrame(data=datasets, columns=cols)
     if save_datasets:
@@ -203,11 +198,12 @@ def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise
         for init_cond in init_cond_list:
             metadata_file.write("\n"+",".join([str(i) for i in init_cond]))
         metadata_file.write(f"\nparameters: "+",".join([str(i) for i in p]))
+        metadata_file.write(f"\nenv_noise: {env_noise}")
         metadata_file.write(f"\nt0: {t0}")
         metadata_file.write(f"\ndt: {dt}")
         metadata_file.write(f"\nseed: {seed}")
+        metadata_file.write(f"\nrepetitions: {repetitions}")
         metadata_file.write(f"\nscale_meas_noise_by_abund: {scale_meas_noise_by_abund}")
         metadata_file.close()
-
 
     return dataframe
