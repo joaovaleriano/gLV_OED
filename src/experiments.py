@@ -142,7 +142,7 @@ def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise
             datetime_now = str(datetime.now()).split(".")[0].replace("-", "").replace(":", "").replace(" ", "-")
             save_loc = datetime_now
 
-        if save_loc not in os.listdir(os.getcwd()+"/../experiment_outputs"):
+        if save_loc not in os.listdir(current_file_path+"/../experiment_outputs"):
             os.mkdir(current_file_path+"/../experiment_outputs/"+save_loc)
         save_loc = current_file_path+"/../experiment_outputs/"+save_loc
 
