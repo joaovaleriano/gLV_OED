@@ -138,6 +138,9 @@ def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise
     current_file_path = os.path.dirname(__file__)
 
     if save_datasets:
+        if "experiment_outputs" not in os.listdir(current_file_path+"/.."):
+            os.mkdir(current_file_path+"/../experiment_outputs")
+
         if save_loc == "":
             datetime_now = str(datetime.now()).split(".")[0].replace("-", "").replace(":", "").replace(" ", "-")
             save_loc = datetime_now
