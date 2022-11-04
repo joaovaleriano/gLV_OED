@@ -23,7 +23,7 @@ def add_time_diff(df):
     datasets = df["dataset"].unique()
 
     dspdt_cols = [f"d{i}/dt" for i in species]
-    df[dspdt_cols] = np.nan
+    df.reindex(columns=df.columns.tolist()+dspdt_cols)
 
     for i in datasets:
         dataset = df[df["dataset"]==i]
@@ -42,7 +42,7 @@ def add_log_time_diff(df):
     datasets = df["dataset"].unique()
 
     dlogspdt_cols = [f"dlog{i}/dt" for i in species]
-    df[dlogspdt_cols] = np.nan
+    df.reindex(columns=df.columns.tolist()+dlogspdt_cols)
 
     for i in datasets:
         dataset = df[df["dataset"]==i]
@@ -61,7 +61,7 @@ def add_glv_rhs(df, p):
     datasets = df["dataset"].unique()
 
     glv_rhs_cols = [f"glv_rhs_{i}" for i in species]
-    df[glv_rhs_cols] = np.nan
+    df.reindex(columns=df.columns.tolist()+glv_rhs_cols)
 
     for i in datasets:
         dataset = df[df["dataset"]==i]
@@ -81,7 +81,7 @@ def add_arithm_mean(df):
     datasets = df["dataset"].unique()
 
     arithm_mean_cols = [f"arithm_mean_{i}" for i in species]
-    df[arithm_mean_cols] = np.nan
+    df.reindex(columns=df.columns.tolist()+arithm_mean_cols)
 
     for i in datasets:
         dataset = df[df["dataset"]==i]
@@ -100,7 +100,7 @@ def add_geom_mean(df):
     datasets = df["dataset"].unique()
 
     geom_mean_cols = [f"geom_mean_{i}" for i in species]
-    df[geom_mean_cols] = np.nan
+    df.reindex(columns=df.columns.tolist()+geom_mean_cols)
 
     for i in datasets:
         dataset = df[df["dataset"]==i]
