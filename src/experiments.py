@@ -167,22 +167,22 @@ def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise
 
     repl_c = 0
 
-    for init_cond in init_cond_list:
-        for t_samp in t_samp_list:
+    for i, init_cond in enumerate(init_cond_list):
+        for j, t_samp in enumerate(t_samp_list):
             for meas_noise in meas_noise_list:            
                 for rep in range(repetitions):
                     data = gen_experiment(p, init_cond, t0, dt, t_samp, env_noise, meas_noise, env_seeds[repl_c], meas_seeds[repl_c], True)
 
                     dt_arr = np.concatenate((np.diff(t_samp), [np.nan]))
 
-                    datasets.append(np.hstack((np.array([repl_c, meas_noise])*np.ones((t_samp.shape[0], 2), dtype=int), 
+                    datasets.append(np.hstack((np.array([repl_c, i, j, meas_noise])*np.ones((t_samp.shape[0], 4), dtype=int), 
                     t_samp.reshape((-1, 1)), dt_arr.reshape((-1, 1)), data)))
 
                     repl_c += 1
 
     datasets = np.vstack(datasets)
 
-    cols = ["dataset", "measurement_noise", "time", "dt"] + [f"sp{i}" for i in range(1, n+1)]
+    cols = ["dataset", "init_cond_idx", "t_samp_dist_idx", "measurement_noise", "time", "dt"] + [f"sp{i}" for i in range(1, n+1)]
 
     dataframe = pd.DataFrame(data=datasets, columns=cols)
     if save_datasets:
@@ -198,15 +198,16 @@ def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise
         dataframe.to_csv(f"{save_loc}/datasets/dataset{save_name}.csv")
 
         metadata_file = open(f"{save_loc}/metadata/metadata{save_name}.txt", "w")
-        metadata_file.write(f"initial conditions:")
+        metadata_file.write(f"{str(datetime.now()).split('.')[0]}")
+        metadata_file.write(f"\n\ninitial conditions:")
         for init_cond in init_cond_list:
             metadata_file.write("\n"+",".join([str(i) for i in init_cond]))
-        metadata_file.write(f"sampling timepoints:")
+        metadata_file.write(f"\nsampling timepoints:")
         for t_samp in t_samp_list:
             metadata_file.write("\n"+",".join([str(i) for i in t_samp]))
         metadata_file.write(f"\nparameters: "+",".join([str(i) for i in p]))
         metadata_file.write(f"\nenv_noise: {env_noise}")
-        metadata_file.write(f"measurement noise:"+",".join([str(i) for i in meas_noise_list]))
+        metadata_file.write(f"\nmeasurement noise:"+",".join([str(i) for i in meas_noise_list]))
         metadata_file.write(f"\nt0: {t0}")
         metadata_file.write(f"\ndt: {dt}")
         metadata_file.write(f"\nseed: {seed}")
