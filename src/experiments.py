@@ -206,8 +206,8 @@ def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise
         for t_samp in t_samp_list:
             metadata_file.write("\n"+",".join([str(i) for i in t_samp]))
         metadata_file.write(f"\nparameters: "+",".join([str(i) for i in p]))
+        metadata_file.write(f"\nmeasurement noise: "+",".join([str(i) for i in meas_noise_list]))
         metadata_file.write(f"\nenv_noise: {env_noise}")
-        metadata_file.write(f"\nmeasurement noise:"+",".join([str(i) for i in meas_noise_list]))
         metadata_file.write(f"\nt0: {t0}")
         metadata_file.write(f"\ndt: {dt}")
         metadata_file.write(f"\nseed: {seed}")
