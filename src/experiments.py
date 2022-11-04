@@ -175,7 +175,8 @@ def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise
 
                     dt_arr = np.concatenate((np.diff(t_samp), [np.nan]))
 
-                    datasets.append(np.hstack((np.array([repl_c, meas_noise])*np.ones((t_samp.shape[0], 2), dtype=int), t_samp.reshape((-1, 1)), dt_arr.reshape((-1, 1)), data)))
+                    datasets.append(np.hstack((np.array([repl_c, meas_noise])*np.ones((t_samp.shape[0], 2), dtype=int), 
+                    t_samp.reshape((-1, 1)), dt_arr.reshape((-1, 1)), data)))
 
                     repl_c += 1
 
