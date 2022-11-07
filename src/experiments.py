@@ -175,14 +175,14 @@ def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise
 
                     dt_arr = np.concatenate((np.diff(t_samp), [np.nan]))
 
-                    datasets.append(np.hstack((np.array([repl_c, i, j, meas_noise])*np.ones((t_samp.shape[0], 4), dtype=int), 
+                    datasets.append(np.hstack((np.array([repl_c, i, j, meas_noise, rep])*np.ones((t_samp.shape[0], 5), dtype=int), 
                     t_samp.reshape((-1, 1)), dt_arr.reshape((-1, 1)), data)))
 
                     repl_c += 1
 
     datasets = np.vstack(datasets)
 
-    cols = ["dataset", "init_cond_idx", "t_samp_dist_idx", "measurement_noise", "time", "dt"] + [f"sp{i}" for i in range(1, n+1)]
+    cols = ["dataset", "init_cond_idx", "t_samp_dist_idx", "measurement_noise", "replicate", "time", "dt"] + [f"sp{i}" for i in range(1, n+1)]
 
     dataframe = pd.DataFrame(data=datasets, columns=cols)
     if save_datasets:
