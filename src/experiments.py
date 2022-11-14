@@ -66,7 +66,8 @@ def measurement(t, tp, xp, noise=0., seed=0):
 
     x = np.array([np.interp(t, tp, xp[:,i]) for i in range(xp.shape[1])]).T
 
-    x += np.random.normal(scale=noise, size=x.shape)
+    # x += np.random.normal(scale=noise, size=x.shape)
+    # x[x<0.] = 0.
 
     return x
 
@@ -103,7 +104,7 @@ def gen_experiment(p, init_cond, t0, dt, t_samp, env_noise, meas_noise, env_seed
     system = euler_maruyama(glv, t0, x0, p, env_noise, dt, t_samp, env_seed)
 
     if scale_meas_noise_by_abund:
-        scaled_meas_noise = meas_noise*system.mean(axis=0)
+        scaled_meas_noise = meas_noise*np.sqrt(system)
     else:
         scaled_meas_noise = meas_noise
 
