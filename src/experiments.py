@@ -63,6 +63,7 @@ def measurement(t, tp, xp, noise=0., seed=0):
     """
 
     np.random.seed(seed)
+    set_nb_seed(seed)
 
     x = np.array([np.interp(t, tp, xp[:,i]) for i in range(xp.shape[1])]).T
 
@@ -163,7 +164,9 @@ def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise
     n_replicates = len(t_samp_list)*len(meas_noise_list)*len(init_cond_list)*repetitions
 
     np.random.seed(seed)
-    env_seeds = np.random.randint(0, 10**9, n_replicates)
+    set_nb_seed(seed)
+    
+    env_seed = np.random.randint(0, 10**9, repetitions)
     meas_seeds = np.random.randint(0, 10**9, n_replicates)
 
     repl_c = 0
@@ -172,7 +175,7 @@ def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise
         for j, t_samp in enumerate(t_samp_list):
             for meas_noise in meas_noise_list:            
                 for rep in range(repetitions):
-                    data = gen_experiment(p, init_cond, t0, dt, t_samp, env_noise, meas_noise, env_seeds[repl_c], meas_seeds[repl_c], True)
+                    data = gen_experiment(p, init_cond, t0, dt, t_samp, env_noise, meas_noise, env_seed[rep], meas_seeds[repl_c], True)
 
                     dt_arr = np.concatenate((np.diff(t_samp), [np.nan]))
 
