@@ -133,6 +133,7 @@ def euler_maruyama(f, t0, x, p, noise_scale, dt, t_eval, seed=0):
     n = x.shape[0]
     
     np.random.seed(seed)
+    set_nb_seed(seed)
     noise = noise_scale*np.random.randn(int((t_eval[-1]-t0)/dt)+len(t_eval), n)
 
     x_ = np.zeros((t_eval.shape[0], n))
@@ -185,6 +186,7 @@ def sort_glv_params(n, seed, r_max, A_diag_mean, A_diag_std, A_off_diag_std):
     """
 
     np.random.seed(seed)
+    set_nb_seed(seed)
     r = np.random.uniform(0, r_max, n)
     A = np.random.normal(scale=A_off_diag_std, size=(n,n))
     A -= np.eye(n)*A + np.diag(np.random.normal(A_diag_mean, A_diag_std, n))
