@@ -67,8 +67,8 @@ def measurement(t, tp, xp, noise=0., seed=0):
 
     x = np.array([np.interp(t, tp, xp[:,i]) for i in range(xp.shape[1])]).T
 
-    # x += np.random.normal(scale=noise, size=x.shape)
-    # x[x<0.] = 0.
+    x += np.random.normal(scale=noise, size=x.shape)
+    x[x<0.] = 0.
 
     return x
 
@@ -105,7 +105,7 @@ def gen_experiment(p, init_cond, t0, dt, t_samp, env_noise, meas_noise, env_seed
     system = euler_maruyama(glv, t0, x0, p, env_noise, dt, t_samp, env_seed)
 
     if scale_meas_noise_by_abund:
-        scaled_meas_noise = meas_noise*np.sqrt(system)
+        scaled_meas_noise = meas_noise*system
     else:
         scaled_meas_noise = meas_noise
 
@@ -166,7 +166,7 @@ def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise
     np.random.seed(seed)
     set_nb_seed(seed)
     
-    env_seed = np.random.randint(0, 10**9, repetitions)
+    env_seed = np.random.randint(0, 10**9, len(init_cond_list)*repetitions)
     meas_seeds = np.random.randint(0, 10**9, n_replicates)
 
     repl_c = 0
@@ -175,7 +175,7 @@ def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise
         for j, t_samp in enumerate(t_samp_list):
             for meas_noise in meas_noise_list:            
                 for rep in range(repetitions):
-                    data = gen_experiment(p, init_cond, t0, dt, t_samp, env_noise, meas_noise, env_seed[rep], meas_seeds[repl_c], True)
+                    data = gen_experiment(p, init_cond, t0, dt, t_samp, env_noise, meas_noise, env_seed[i*repetitions+rep], meas_seeds[repl_c], True)
 
                     dt_arr = np.concatenate((np.diff(t_samp), [np.nan]))
 
