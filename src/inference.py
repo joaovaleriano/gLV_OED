@@ -23,6 +23,20 @@ from tqdm import tqdm
 # linear regression w/ different regularizations
 
 def fit_lr(df, averaging="none"):
+    """
+    fit_lr: fits via sklearn.lm.LinearRegression 
+            dependent variable: log(Δy/Δt), regressor: y, 
+            y = species abundances, t = time
+
+    --- INPUT ---
+    df: pandas DataFrame with data to be fit
+    averaging: how to take averages of y to use as regressor. string
+
+    --- OUTPUT ---
+    reg.intercept_: obtained growth rates
+    reg.coef_: obtained interaction matrix
+    """
+
     add_log_time_diff(df)
 
     reg = lm.LinearRegression()
@@ -46,6 +60,20 @@ def fit_lr(df, averaging="none"):
 
 
 def fit_ridge_cv(df, averaging="none"):
+    """
+    fit_ridge_cv: fit via sklearn.lm.RidgeCV
+            dependent variable: log(Δy/Δt), regressor: y, 
+            y = species abundances, t = time
+
+    --- INPUT ---
+    df: pandas DataFrame with data to be fit
+    averaging: how to take averages of y to use as regressor. string
+
+    --- OUTPUT ---
+    reg.intercept_: obtained growth rates
+    reg.coef_: obtained interaction matrix
+    """
+
     add_log_time_diff(df)
 
     reg = lm.RidgeCV(alphas=10.**np.arange(-5, 3))
@@ -69,6 +97,20 @@ def fit_ridge_cv(df, averaging="none"):
 
 
 def fit_elasticnet_cv(df, averaging="none"):
+    """
+    fit_elasticnet_cv: fit via sklearn.lm.MultiTaskElasticNetcv
+            dependent variable: log(Δy/Δt), regressor: y, 
+            y = species abundances, t = time
+
+    --- INPUT ---
+    df: pandas DataFrame with data to be fit
+    averaging: how to take averages of y to use as regressor. string
+
+    --- OUTPUT ---
+    reg.intercept_: obtained growth rates
+    reg.coef_: obtained interaction matrix
+    """
+    
     add_log_time_diff(df)
 
     reg = lm.MultiTaskElasticNetCV(alphas=10.**np.arange(-5, 3))
@@ -95,12 +137,27 @@ def fit_elasticnet_cv(df, averaging="none"):
 # gradient descent optimization
 
 @njit
-def mse(rhs, dydt):
-    return ((rhs-dydt)**2).mean()
+def mse(a, b):
+
+    return ((a-b)**2).mean()
 
 
 @njit
 def mse_grad_p(rhs, rhs_grad_p, dydt):
+    """
+    mse_grad_p: gradient of MSE between dydt estimator and calculated gLV rhs,
+                with respect to parameters
+
+    --- INPUT ---
+    rhs:
+    rhs_grad_p:
+    dydt:
+
+    --- OUTPUT ---
+    
+
+    """
+
     a = 2*(np.expand_dims(rhs-dydt, -1)*rhs_grad_p)
 
     r = np.zeros(rhs_grad_p.shape[-1])
@@ -203,3 +260,50 @@ def lm_fit(f, x, y, p0_list, sig=None, maxfev=400):
 
     return p_list
 
+
+#%%
+
+def get_meta(metatext):
+    """
+    
+    """
+
+    meta = {}
+    for n, line in enumerate(metatext):
+        if "initial conditions" in line:
+            init_cond_ln_idx = n
+
+        elif "sampling timepoints" in line:
+            t_samp_ln_idx = n
+
+        elif "parameters" in line:
+            meta["parameters"] = np.array([np.float64(j) for j in line.split(": ")[1].split(",")])
+            params_ln_idx = n
+        
+        elif "measurement noise" in line:
+            meta["meas_noise"] = np.array([np.float64(j) for j in line.split(": ")[1].split(",")])
+            meas_noise_ln_idx = n
+            break
+
+    meta["init_cond"] = np.array([[np.float64(i) for i in metatext[j].split(",")] \
+                                  for j in range(init_cond_ln_idx+1, t_samp_ln_idx)])
+
+    meta["n_init_cond"] = len(meta["init_cond"])
+
+    meta["t_samp"] = [np.array([np.float64(i) for i in metatext[j].split(",")]) \
+                                  for j in range(t_samp_ln_idx+1, params_ln_idx)]
+
+    meta["n_tpoints"] = np.array([len(t) for t in meta["t_samp"]])
+
+    meta["avg_dt"] = np.array([np.diff(t).mean() for t in meta["t_samp"]])
+
+    for i in range(meas_noise_ln_idx+1, len(metatext)-1):
+        key, val = metatext[i].split(": ")
+        meta[key] = np.float64(val)
+
+    key, val = metatext[-1].split(": ")
+    meta[key] = bool(val)
+
+    meta["repetitions"] = int(meta["repetitions"])
+
+    return meta
