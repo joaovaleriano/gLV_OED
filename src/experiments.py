@@ -30,7 +30,7 @@ def init_cond_by_growth(x_eq, scale_list, n):
         abund_sum = x_eq.sum()*scale
         
         for i in range(n):
-            init_cond = np.random.rand(n_sp)
+            init_cond = np.random.uniform(0.1, 1, n_sp)
             init_cond_list.append(init_cond * abund_sum/init_cond.sum())
 
     return init_cond_list
