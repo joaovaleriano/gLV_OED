@@ -28,19 +28,28 @@ from analysis import *
 #%%
 # define dataset properties
 
-n_sp = np.array([2, 4, 6, 8, 10])
-n_samples = [5, 10, 20, 50, 100]
+n_sp = np.array([3, 5, 10, 20])
+n_samples = [11, 21, 31]
 t_samp_list = [np.linspace(0, 30, i) for i in n_samples]
 
-params_seeds = np.arange(20)
+params_seeds = np.arange(10)
 
-env_noise_list = [0., 0.05, 0.1, 0.2]
-meas_noise_list = [0., 0.05, 0.1, 0.2]
+env_noise_list = [0.1]
+meas_noise_list = [0.1]
 
 n_init_cond = 20
 
 perturb_exp_base = 2.
-perturb_scale_and_sigma = [-0.5, 1]
+
+perturb_scale_avg_and_sig = [0., 1.]
+
+if len(sys.argv) > 1:
+    perturb_scale_avg_and_sig[1] = np.float64(sys.argv[1])
+
+save_loc = "test_perturb"
+if len(sys.argv) > 2:
+    save_loc = sys.argv[2]
+print(f"Save location = {save_loc}\n")
 
 repetitions = 1
 
@@ -69,7 +78,7 @@ print(f"Expected total size: {data_size:.3f} MB")
 
 
 #%%
-# data generation command
+# data generation command - perturbation
 
 np.random.seed(0)
 
@@ -82,10 +91,10 @@ for i in range(len(n_sp)):
         A = p[n_sp[i]:].reshape((n_sp[i], n_sp[i]))
         x_eq = -np.linalg.inv(A)@r
 
-        init_cond_list = init_cond_by_perturb(x_eq, perturb_exp_base, perturb_scale_and_sigma, n_init_cond)
+        init_cond_list = init_cond_by_perturb(x_eq, perturb_exp_base, perturb_scale_avg_and_sig, n_init_cond)
 
         for k in range(len(env_noise_list)):
             env_noise = env_noise_list[k]
             save_name = f"{n_sp[i]}_sp{j}_env_noise{env_noise}"
             gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise_list, repetitions, 
-            seed=k, scale_meas_noise_by_abund=True, save_datasets=True, save_loc="test", save_name=save_name)
+            seed=k, scale_meas_noise_by_abund=True, save_datasets=True, save_loc=save_loc, save_name=save_name)
