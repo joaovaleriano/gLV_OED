@@ -32,7 +32,12 @@ def natural_sort(l):
 
 #%% # set path with data
 
-datapath = "../experiment_outputs/perturb_meas_0.1/datasets/"
+folder = "test"
+
+if len(sys.argv) > 1:
+    folder = sys.argv[1]
+
+datapath = f"../experiment_outputs/{folder}/datasets/"
 datafiles = os.listdir(datapath)
 metadatafiles = [f"metadata{i.split('dataset')[1].split('csv')[0]}txt"\
                 for i in datafiles]
@@ -65,7 +70,6 @@ print(f"Environmental noise: {metadict['env_noise']}")
 print(f"Amounts of measurement noise: {metadict['meas_noise']}")
 
 #%% def calculate_es_score
-
 
 def calculate_es_score(true_aij, inferred_aij) -> float:
     """GRANT'S edited version to calculate ED score
