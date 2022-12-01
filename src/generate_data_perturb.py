@@ -28,16 +28,16 @@ from analysis import *
 #%%
 # define dataset properties
 
-n_sp = np.array([3, 5, 7, 10, 20])
-n_samples = [11, 21, 31, 51, 76, 101, 201]
+n_sp = np.array([3, 5, 7])
+n_samples = [11, 21, 31]
 t_samp_list = [np.linspace(0, 30, i) for i in n_samples]
 
-params_seeds = np.arange(100)
+params_seeds = np.arange(10)
 
 env_noise_list = [0.1]
 meas_noise_list = [0.1]
 
-n_init_cond = 100
+n_init_cond = 10
 
 perturb_exp_base = 2.
 
