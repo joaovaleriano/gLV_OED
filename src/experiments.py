@@ -151,15 +151,7 @@ def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise
             os.mkdir(current_file_path+"/../experiment_outputs/"+save_loc)
         save_loc = current_file_path+"/../experiment_outputs/"+save_loc
 
-        if "datasets" not in os.listdir(save_loc):
-            os.mkdir(f"{save_loc}/datasets")
-
-        if "metadata" not in os.listdir(save_loc):
-            os.mkdir(f"{save_loc}/metadata")
-
     n = int((np.sqrt(1+4*len(p))-1)/2)
-
-    datasets = []
     
     n_replicates = len(t_samp_list)*len(meas_noise_list)*len(init_cond_list)*repetitions
 
@@ -169,11 +161,15 @@ def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise
     env_seed = np.random.randint(0, 10**9, len(init_cond_list)*repetitions)
     meas_seeds = np.random.randint(0, 10**9, n_replicates)
 
-    repl_c = 0
-
-    for i, init_cond in enumerate(init_cond_list):
+    for meas_noise in meas_noise_list:
+        os.mkdir(f"{save_loc}/meas_noise{meas_noise}")
         for j, t_samp in enumerate(t_samp_list):
-            for meas_noise in meas_noise_list:            
+            os.mkdir(f"{save_loc}/meas_noise{meas_noise}/t_samp{np.diff(t_samp).mean()}")
+
+            repl_c = 0
+
+            datasets = []
+            for i, init_cond in enumerate(init_cond_list):
                 for rep in range(repetitions):
                     data = gen_experiment(p, init_cond, t0, dt, t_samp, env_noise, meas_noise, env_seed[i*repetitions+rep], meas_seeds[repl_c], True)
 
@@ -184,39 +180,39 @@ def gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise
 
                     repl_c += 1
 
-    datasets = np.vstack(datasets)
+            datasets = np.vstack(datasets)
 
-    cols = ["dataset", "init_cond_idx", "t_samp_dist_idx", "measurement_noise", "replicate", "time", "dt"] + [f"sp{i}" for i in range(1, n+1)]
+            cols = ["dataset", "init_cond_idx", "t_samp_dist_idx", "measurement_noise", "replicate", "time", "dt"] + [f"sp{i}" for i in range(1, n+1)]
 
-    dataframe = pd.DataFrame(data=datasets, columns=cols)
-    if save_datasets:
-        if save_name == "datetime":
-            datetime_now = str(datetime.now()).split(".")[0].replace("-", "").replace(":", "").replace(" ", "-")
-        
-            datetime_repeat = sum([datetime_now in os.listdir(f"save_loc/datasets")])
-            if datetime_repeat > 0:
-                save_name = f"{datetime_now}-{datetime_repeat}"
-            else:
-                save_name = datetime_now
+            dataframe = pd.DataFrame(data=datasets, columns=cols)
+            if save_datasets:
+                if save_name == "datetime":
+                    datetime_now = str(datetime.now()).split(".")[0].replace("-", "").replace(":", "").replace(" ", "-")
+                
+                    datetime_repeat = sum([datetime_now in os.listdir(f"save_loc/datasets")])
+                    if datetime_repeat > 0:
+                        save_name = f"{datetime_now}-{datetime_repeat}"
+                    else:
+                        save_name = datetime_now
 
-        dataframe.to_csv(f"{save_loc}/datasets/dataset{save_name}.csv")
+                dataframe.to_csv(f"{save_loc}/meas_noise{meas_noise}/t_samp{np.diff(t_samp).mean()}/dataset{save_name}.csv")
 
-        metadata_file = open(f"{save_loc}/metadata/metadata{save_name}.txt", "w")
-        metadata_file.write(f"{str(datetime.now()).split('.')[0]}")
-        metadata_file.write(f"\n\ninitial conditions:")
-        for init_cond in init_cond_list:
-            metadata_file.write("\n"+",".join([str(i) for i in init_cond]))
-        metadata_file.write(f"\nsampling timepoints:")
-        for t_samp in t_samp_list:
-            metadata_file.write("\n"+",".join([str(i) for i in t_samp]))
-        metadata_file.write(f"\nparameters: "+",".join([str(i) for i in p]))
-        metadata_file.write(f"\nmeasurement noise: "+",".join([str(i) for i in meas_noise_list]))
-        metadata_file.write(f"\nenv_noise: {env_noise}")
-        metadata_file.write(f"\nt0: {t0}")
-        metadata_file.write(f"\ndt: {dt}")
-        metadata_file.write(f"\nseed: {seed}")
-        metadata_file.write(f"\nrepetitions: {repetitions}")
-        metadata_file.write(f"\nscale_meas_noise_by_abund: {scale_meas_noise_by_abund}")
-        metadata_file.close()
+                metadata_file = open(f"{save_loc}/meas_noise{meas_noise}/t_samp{np.diff(t_samp).mean()}/metadata{save_name}.txt", "w")
+                metadata_file.write(f"{str(datetime.now()).split('.')[0]}")
+                metadata_file.write(f"\n\ninitial conditions:")
+                for init_cond in init_cond_list:
+                    metadata_file.write("\n"+",".join([str(i) for i in init_cond]))
+                metadata_file.write(f"\nsampling timepoints:")
+                for t_samp in t_samp_list:
+                    metadata_file.write("\n"+",".join([str(i) for i in t_samp]))
+                metadata_file.write(f"\nparameters: "+",".join([str(i) for i in p]))
+                metadata_file.write(f"\nmeasurement noise: "+",".join([str(i) for i in meas_noise_list]))
+                metadata_file.write(f"\nenv_noise: {env_noise}")
+                metadata_file.write(f"\nt0: {t0}")
+                metadata_file.write(f"\ndt: {dt}")
+                metadata_file.write(f"\nseed: {seed}")
+                metadata_file.write(f"\nrepetitions: {repetitions}")
+                metadata_file.write(f"\nscale_meas_noise_by_abund: {scale_meas_noise_by_abund}")
+                metadata_file.close()
 
     return dataframe

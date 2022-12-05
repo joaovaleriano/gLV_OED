@@ -28,16 +28,27 @@ from analysis import *
 #%%
 # define dataset properties
 
-n_sp = np.array([3, 5, 7, 10, 20])
-n_samples = [11, 21, 31, 51, 76, 101, 201]
+# n_sp = np.array([3, 5, 7, 10, 20])
+# n_samples = [11, 21, 31, 51, 76, 101, 201]
+# t_samp_list = [np.linspace(0, 30, i) for i in n_samples]
+
+# params_seeds = np.arange(100)
+
+# env_noise_list = [0.1]
+# meas_noise_list = [0.1]
+
+# n_init_cond = 100
+
+n_sp = np.array([3, 5])
+n_samples = [11, 21]
 t_samp_list = [np.linspace(0, 30, i) for i in n_samples]
 
-params_seeds = np.arange(100)
+params_seeds = np.arange(10)
 
 env_noise_list = [0.1]
 meas_noise_list = [0.1]
 
-n_init_cond = 100
+n_init_cond = 5
 
 growth_scale = [0.1]
 
@@ -80,19 +91,25 @@ print(f"Expected total size: {data_size:.3f} MB")
 
 np.random.seed(0)
 
-for i in range(len(n_sp)):
-    print(f"{n_sp[i]} species: ")
-    for j in tqdm(range(len(params_seeds))):
-        p = sort_glv_params(n_sp[i], params_seeds[j], r_max, A_diag_mean[i], A_diag_std[i], A_off_diag_std)
+for k, env_noise in enumerate(env_noise_list):
+    save_loc_k = f"{save_loc}_env_noise{env_noise}"
+    
+    os.mkdir(f"../experiment_outputs/{save_loc_k}")
+    
+    for i in range(len(n_sp)):
+        os.mkdir(f"../experiment_outputs/{save_loc_k}/{n_sp[i]}_sp")
 
-        r = p[:n_sp[i]]
-        A = p[n_sp[i]:].reshape((n_sp[i], n_sp[i]))
-        x_eq = -np.linalg.inv(A)@r
+        print(f"{n_sp[i]} species: ")
+        for j in tqdm(range(len(params_seeds))):
+            p = sort_glv_params(n_sp[i], params_seeds[j], r_max, A_diag_mean[i], A_diag_std[i], A_off_diag_std)
 
-        init_cond_list = init_cond_by_growth(x_eq, growth_scale, n_init_cond)
+            r = p[:n_sp[i]]
+            A = p[n_sp[i]:].reshape((n_sp[i], n_sp[i]))
+            x_eq = -np.linalg.inv(A)@r
 
-        for k in range(len(env_noise_list)):
-            env_noise = env_noise_list[k]
+            init_cond_list = init_cond_by_growth(x_eq, growth_scale, n_init_cond)
+
             save_name = f"{n_sp[i]}_sp{j}_env_noise{env_noise}"
+
             gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise_list, repetitions, 
-            seed=k, scale_meas_noise_by_abund=True, save_datasets=True, save_loc=save_loc, save_name=save_name)
+            seed=k, scale_meas_noise_by_abund=True, save_datasets=True, save_loc=save_loc_k+f"/{n_sp[i]}_sp/param_seed{j}", save_name=save_name)
