@@ -40,8 +40,8 @@ from analysis import *
 
 # n_init_cond = 100
 
-n_sp = np.array([3, 5])
-n_samples = [11, 21]
+n_sp = np.array([3, 5, 10])
+n_samples = [11, 21, 31, 51]
 t_samp_list = [np.linspace(0, 30, i) for i in n_samples]
 
 params_seeds = np.arange(10)
@@ -49,7 +49,7 @@ params_seeds = np.arange(10)
 env_noise_list = [0.1]
 meas_noise_list = [0.1]
 
-n_init_cond = 5
+n_init_cond = 20
 
 perturb_exp_base = 2.
 
