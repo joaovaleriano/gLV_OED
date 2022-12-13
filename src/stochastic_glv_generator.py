@@ -202,3 +202,41 @@ def sort_glv_params(n, seed, r_max, A_diag_mean, A_diag_std, A_off_diag_std):
     p = np.concatenate((r, A.flatten()))
 
     return p
+
+def sort_glv_params_A_x_eq(n, seed, x_eq_max, A_diag_mean, A_diag_std, A_off_diag_std):
+    """
+    sort_glv_params: sorts parameters that lead to a stable gLV system
+    growth rates are sorted uniformly between 0 and r_max
+    interspecies interactions are sorted normally around zero with A_off_diag_std standard deviation
+    intraspecies interactions are sorted as negative absolute values of variables normally around zero with A_diag_std standard deviation
+
+    --- INPUT ---
+    n: number of species. scalar
+    seed: random seed to initialize parameters. integer
+    x_eq_max: maximum equilibrium abundance. scalar
+    A_diag_std: standard deviation for distribution of intraspecies interactions. scalar
+    A_off_diag_std: standard deviation for distribution of interspecies interactions. scalar
+
+    --- OUTPUT ---
+    p: chosen parameter set. array (N*(N-1),)
+    """
+
+    np.random.seed(seed)
+    set_nb_seed(seed)
+    x_eq = np.random.uniform(0, x_eq_max, n)
+    A = np.random.normal(scale=A_off_diag_std, size=(n,n))
+    A -= np.eye(n)*A + np.diag(np.random.normal(A_diag_mean, A_diag_std, n))
+    r = -A@x_eq
+
+    mat_c = 0
+    while (np.linalg.eig(x_eq*A)[0]>0).any():
+        mat_c += 1
+        
+        # print(f"generating stable matrix ... {mat_c}")
+        A = np.random.normal(scale=A_off_diag_std, size=(n,n))
+        A -= np.eye(n)*A + np.diag(np.random.normal(A_diag_mean, A_diag_std, n))
+        r = -A@x_eq
+
+    p = np.concatenate((r, A.flatten()))
+
+    return x_eq, p
