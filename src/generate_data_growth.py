@@ -14,6 +14,7 @@ Direct script to use the implemented methods to generate mock datasets.
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import h5py
 import time
 import datetime
 
@@ -28,27 +29,27 @@ from analysis import *
 #%%
 # define dataset properties
 
-n_sp = np.array([3, 5, 7, 10, 20])
-n_samples = [11, 21, 31, 51, 76, 101, 201]
-t_samp_list = [np.linspace(0, 30, i) for i in n_samples]
-
-params_seeds = np.arange(100)
-
-env_noise_list = [0.1]
-meas_noise_list = [0.1]
-
-n_init_cond = 100
-
-# n_sp = np.array([3, 5])
-# n_samples = [11, 21]
+# n_sp = np.array([3, 5, 7, 10, 20])
+# n_samples = [11, 21, 31, 51, 76, 101, 201]
 # t_samp_list = [np.linspace(0, 30, i) for i in n_samples]
 
-# params_seeds = np.arange(10)
+# params_seeds = np.arange(100)
 
 # env_noise_list = [0.1]
 # meas_noise_list = [0.1]
 
-# n_init_cond = 5
+# n_init_cond = 100
+
+n_sp = np.array([10])
+n_samples = [11, 21, 31]
+t_samp_list = [np.linspace(0, 30, i) for i in n_samples]
+
+params_seeds = np.arange(5)
+
+env_noise_list = [0.1]
+meas_noise_list = [0.1]
+
+n_init_cond = 20
 
 growth_scale = [0.1]
 
@@ -113,3 +114,23 @@ for k, env_noise in enumerate(env_noise_list):
 
             gen_replicates(p, env_noise, init_cond_list, t0, dt, t_samp_list, meas_noise_list, repetitions, 
             seed=k, scale_meas_noise_by_abund=True, save_datasets=True, save_loc=save_loc_k+f"/{n_sp[i]}_sp/param_seed{j}", save_name=save_name)
+
+    with h5py.File(f"../experiment_outputs/{save_loc_k}/data_generation_log.h5", "w") as log:
+
+        log.attrs["env_noise"] = env_noise
+        log.attrs["meas_noise_list"] = meas_noise_list
+        log.attrs["n_species"] = n_sp
+        log.attrs["n_samples"] = n_samples
+        log.attrs["avg_samp_dt"] = [np.diff(t_samp).mean() for t_samp in t_samp_list]
+        log.attrs["n_params_seeds"] = len(params_seeds)
+        log.attrs["n_init_cond"] = n_init_cond
+        log.attrs["repetitions"] = repetitions
+
+        log.attrs["t0"] = t0
+        log.attrs["dt"] = dt
+        log.attrs["r_max"] = r_max
+        log.attrs["A_off_diag_std"] = A_off_diag_std
+        log.attrs["A_diag_mean"] = A_diag_mean
+        log.attrs["A_diag_std"] = A_diag_std
+
+        log.attrs["growth_scale"] = growth_scale

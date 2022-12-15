@@ -29,27 +29,27 @@ from analysis import *
 #%%
 # define dataset properties
 
-n_sp = np.array([3, 5, 7, 10, 20])
-n_samples = [11, 21, 31, 51, 76, 101, 201]
-t_samp_list = [np.linspace(0, 30, i) for i in n_samples]
-
-params_seeds = np.arange(100)
-
-env_noise_list = [0.1]
-meas_noise_list = [0.1]
-
-n_init_cond = 100
-
-# n_sp = np.array([3, 5, 10])
-# n_samples = [11, 21, 31, 51]
+# n_sp = np.array([3, 5, 7, 10, 20])
+# n_samples = [11, 21, 31, 51, 76, 101, 201]
 # t_samp_list = [np.linspace(0, 30, i) for i in n_samples]
 
-# params_seeds = np.arange(10)
+# params_seeds = np.arange(100)
 
-# env_noise_list = [0.1]
-# meas_noise_list = [0.1]
+# env_noise_list = [0.]
+# meas_noise_list = [0.]
 
-# n_init_cond = 20
+# n_init_cond = 100
+
+n_sp = np.array([10])
+n_samples = [11, 21, 31]
+t_samp_list = [np.linspace(0, 30, i) for i in n_samples]
+
+params_seeds = np.arange(5)
+
+env_noise_list = [0.]
+meas_noise_list = [0.]
+
+n_init_cond = 10
 
 perturb_exp_base = 2.
 
@@ -108,9 +108,9 @@ for k, env_noise in enumerate(env_noise_list):
 
             r = p[:n_sp[i]]
             A = p[n_sp[i]:].reshape((n_sp[i], n_sp[i]))
+            init_cond_list = init_cond_by_perturb(x_eq, perturb_exp_base, perturb_scale_avg_and_sig, 1)*n_init_cond
             x_eq = -np.linalg.inv(A)@r
 
-            init_cond_list = init_cond_by_perturb(x_eq, perturb_exp_base, perturb_scale_avg_and_sig, n_init_cond)
 
             save_name = f"{n_sp[i]}_sp{j}_env_noise{env_noise}"
 
