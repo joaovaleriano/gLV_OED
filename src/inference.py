@@ -133,12 +133,38 @@ def fit_elasticnet_cv(df, averaging="none"):
     return reg.intercept_, reg.coef_
 
 
+def lr_fim(x, y, lr):
+    w = lr.coef_
+    b = lr.intercept_
+    if len(y.shape) == 1:
+        Sig = np.cov((y-lr.predict(x)).reshape((-1,1)).T)
+        S = np.zeros((np.prod(x.shape), x.shape[1]*(x.shape[1]+1)))
+        
+        for i in range(x.shape[1]):
+            S[i::x.shape[1], i] = 1./Sig
+            S[i::x.shape[1], (i+1)*x.shape[1]:(i+2)*x.shape[1]] = x/Sig
+
+        F = S.T@S
+    
+    else:    
+        Sig = np.diag(np.cov((y-lr.predict(x)).T))
+        # Sig = np.ones_like(Sig)
+        S = np.zeros((np.prod(x.shape), x.shape[1]*(x.shape[1]+1)))
+        for i in range(x.shape[1]):
+            S[i::x.shape[1], i] = 1.
+            S[i::x.shape[1], (i+1)*x.shape[1]:(i+2)*x.shape[1]] = x
+
+        F = S.T@np.diag(list(1/Sig)*x.shape[0])@S
+        # F = S.T@S
+
+    return F
+
+
 #%%
 # gradient descent optimization
 
 @njit
 def mse(a, b):
-
     return ((a-b)**2).mean()
 
 
