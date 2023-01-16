@@ -49,7 +49,7 @@ params_seeds = np.arange(5)
 env_noise_list = [0.1]
 meas_noise_list = [0.1]
 
-n_init_cond = 20
+n_init_cond = 1
 
 growth_scale = [0.1]
 
@@ -61,7 +61,7 @@ if len(sys.argv) > 2:
     save_loc = sys.argv[2]
 print(f"Save location = {save_loc}\n")
 
-repetitions = 1
+repetitions = 20
 
 t0 = 0.
 dt = 1e-3
