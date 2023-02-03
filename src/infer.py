@@ -15,6 +15,7 @@ from matplotlib.colors import hsv_to_rgb
 import pandas as pd
 import os
 from itertools import combinations
+import h5py
 
 import sys
 sys.path.append("../src")
@@ -32,42 +33,16 @@ def natural_sort(l):
 
 #%% # set path with data
 
-folder = "test"
+datapath = "../experiment_outputs/growth_scale_0.1_10_sp_5_param_seed_20_init_cond_extend_env_noise0.0"
+log = h5py.File(f"{datapath}/data_generation_log.h5", "r")
 
-if len(sys.argv) > 1:
-    folder = sys.argv[1]
+print(f"n_species = {log.attrs['n_species']}")
+print(f"avg_samp_dt = {log.attrs['avg_samp_dt']}")
+print(f"env_noise = {log.attrs['env_noise']}")
+print(f"meas_noise_list = {log.attrs['meas_noise_list']}")
+print(f"n_params_seeds = {log.attrs['n_params_seeds']}")
 
-datapath = f"../experiment_outputs/{folder}/datasets/"
-datafiles = os.listdir(datapath)
-metadatafiles = [f"metadata{i.split('dataset')[1].split('csv')[0]}txt"\
-                for i in datafiles]
-
-datafiles = natural_sort(datafiles)
-metadatafiles = natural_sort(metadatafiles)
-
-
-#%% set number of species to consider
-
-n_sp = 5
-print(f"{n_sp} species")
-
-datafiles_n_sp = [i for i in datafiles if f"{n_sp}_sp" in i]
-metadatafiles_n_sp = [i for i in metadatafiles if f"{n_sp}_sp" in i]
-
-df = pd.read_csv(datapath+datafiles[-1], index_col=0)
-metatext = open(f"{datapath}../metadata/"+metadatafiles[-1], "r").read().split("\n")
-
-
-#%% get metadata
-
-metadict = get_meta(metatext)
-
-print(f"Numbers of sampling points: {metadict['n_tpoints']}")
-print(f"Average sampling intervals: {metadict['avg_dt'].round(3)}")
-print(f"Number of initial conditions: {metadict['n_init_cond']}")
-print(f"Number of repetitions: {metadict['repetitions']}")
-print(f"Environmental noise: {metadict['env_noise']}")
-print(f"Amounts of measurement noise: {metadict['meas_noise']}")
+env_noise = log.attrs['env_noise']
 
 #%% def calculate_es_score
 
@@ -113,50 +88,78 @@ def calculate_es_score(true_aij, inferred_aij) -> float:
     return ES_score
 
 
-#%% Infer and score
+#%%
 
-try:
-    os.mkdir(f"{datapath}/../inference")
-except:
-    pass
+def get_files(datapath, n_sp, env_noise, meas_noise, avg_samp_dt, filetype="dataset", ext="csv"):
+    params_seeds = [i.split("param_seed")[1] for i in os.listdir(f"{datapath}/{n_sp}_sp")]
 
-param_columns = [f"r{i}" for i in range(1, n_sp+1)] + \
+    datafiles = []
+
+    for p in params_seeds:
+        datafiles.append(f"{datapath}/{n_sp}_sp/param_seed{p}/meas_noise{meas_noise}/t_samp{avg_samp_dt}/{filetype}{n_sp}_sp{p}_env_noise{env_noise}.{ext}")
+    return datafiles
+
+
+import math
+
+def n_comb(n, k):
+    return math.factorial(n)/(math.factorial(n-k)*math.factorial(k))
+
+
+#%%
+
+# Infer and score
+
+for n_sp in log.attrs["n_species"]:
+    for avg_samp_dt in log.attrs["avg_samp_dt"]:
+        for meas_noise in log.attrs["meas_noise_list"]:
+            datafiles = get_files(datapath, n_sp, env_noise, meas_noise, avg_samp_dt)
+            metadatafiles = get_files(datapath, n_sp, env_noise, meas_noise, avg_samp_dt, "metadata", "txt")
+
+            for file_idx in range(len(datafiles)):
+                datafile = datafiles[file_idx]
+                metadatafile = metadatafiles[file_idx]
+                metadict = get_meta(open(metadatafile, "r").read().split("\n"))
+                
+                df = pd.read_csv(datafile, index_col=0)
+                
+                param_columns = [f"r{i}" for i in range(1, n_sp+1)] + \
                 [f"A{i},{j}" for i in range(1, n_sp+1) for j in range(1, n_sp+1)]
+                cols = ["n_dset"] + list(df.columns[1:4]) + param_columns + ["MSPD", "CSR", "ES"]
 
-cols = ["n_init_cond"] + list(df.columns[1:4]) + param_columns + ["MSPD", "CSR", "ES"]
-infer_out_all = []
+                infer_out = pd.DataFrame(columns=cols)
 
-for file_idx in range(len(datafiles_n_sp)):
-    datafile = datafiles_n_sp[file_idx]
-    metadatafile = metadatafiles_n_sp[file_idx]
+                pd.options.mode.chained_assignment = None
+                
+                p = metadict["parameters"]
+                r = p[:n_sp]
+                A = p[n_sp:].reshape((n_sp,n_sp))
 
-    df = pd.read_csv(datapath+datafile, index_col=0)
-    metatext = open(f"{datapath}../metadata/"+metadatafile, "r").read().split("\n")
-    metadict = get_meta(metatext)
-    
-    infer_out = pd.DataFrame(columns=cols)
+                for i in tqdm(range(len(df.dataset.unique()))):
+                # for i in tqdm(range(30)):
+                    if n_comb(len(df.dataset.unique()), i+1) < 10000:
+                        combs = list(combinations(df.dataset.unique(), i+1))
+                        np.random.shuffle(combs)
+                        combs = combs[:100]
+                    else:
+                        combs = []
+                        while len(combs) < 100:
+                            comb = tuple(np.random.choice(df.dataset.unique(), i+1, replace=False))
+                            if comb not in combs:
+                                combs.append(comb)
+                    for comb in combs:
+                        comb = np.random.choice(df.dataset.unique(), i+1, replace=False)
+                        df_comb = df[df.dataset.isin(comb)]
+                        r_est, A_est = fit_ridge_cv(df_comb)
+                        # r_est, A_est = fit_lasso_cv(df_comb)
+                        # r_est, A_est = fit_elasticnet_cv(df_comb)
+                        p_est = np.concatenate((r_est, A_est.flatten()))
+                        MSPD = ((p-p_est)**2).mean()
+                        CSR = (np.sign(A_est)==np.sign(A)).mean()
+                        ES = calculate_es_score(A, A_est)
+                        infer_out.loc[len(infer_out)] = [i+1, comb, avg_samp_dt, meas_noise] + list(p_est) + [MSPD, CSR, ES]
 
-    pd.options.mode.chained_assignment = None
-
-    p = metadict["parameters"]
-    r = p[:n_sp]
-    A = p[n_sp:].reshape((n_sp,n_sp))
-
-    for t_samp in df.t_samp_dist_idx.unique():
-        for meas_noise in df.measurement_noise.unique():
-            df_tmp = df[(df[["t_samp_dist_idx", "measurement_noise"]]==[t_samp, meas_noise]).all(axis=1)]
-            for i in tqdm(range(len(df.init_cond_idx.unique()))):
-                combs = list(combinations(df.init_cond_idx.unique(), i+1))
-                np.random.shuffle(combs)
-                for comb in combs[:100]:
-                    df_comb = df_tmp[df_tmp.init_cond_idx.isin(comb)]
-                    r_est, A_est = fit_ridge_cv(df_comb)
-                    p_est = np.concatenate((r_est, A_est.flatten()))
-                    MSPD = ((p-p_est)**2).mean()
-                    CSR = (np.sign(A_est)==np.sign(A)).mean()
-                    ES = calculate_es_score(A, A_est)
-                    infer_out.loc[len(infer_out)] = [i+1, comb, t_samp, meas_noise] + list(p_est) + [MSPD, CSR, ES]
-
-
-    infer_out.to_csv(f"{datapath}/../inference/infer_out_"+datafile.split("dataset")[1])
-    infer_out_all.append(infer_out)
+                infer_out.to_csv(datafile.split('dataset')[0]+"/inference"+datafile.split("dataset")[1])
+                # infer_out.to_csv(datafile.split('dataset')[0]+"/inference_alphas"+datafile.split("dataset")[1])
+                # infer_out.to_csv(datafile.split('dataset')[0]+"/inference_lasso"+datafile.split("dataset")[1])
+                # infer_out.to_csv(datafile.split('dataset')[0]+"/inference_elasticnet"+datafile.split("dataset")[1])

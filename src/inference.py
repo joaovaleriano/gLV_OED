@@ -59,7 +59,7 @@ def fit_lr(df, averaging="none"):
     return reg.intercept_, reg.coef_
 
 
-def fit_ridge_cv(df, averaging="none"):
+def fit_lasso_cv(df, averaging="none"):
     """
     fit_ridge_cv: fit via sklearn.lm.RidgeCV
             dependent variable: log(Δy/Δt), regressor: y, 
@@ -76,7 +76,45 @@ def fit_ridge_cv(df, averaging="none"):
 
     add_log_time_diff(df)
 
-    reg = lm.RidgeCV(alphas=10.**np.arange(-5, 3))
+    reg = lm.MultiTaskLassoCV(alphas=10.**np.arange(-5, 3), max_iter=10000)
+
+    if averaging == "none":
+        y = df.dropna()[[i for i in df.columns if i[:2]=="sp"]].values
+
+    elif averaging == "arithm":
+        add_arithm_mean(df)
+        y = df.dropna()[[i for i in df.columns if i[:14]=="arithm_mean_sp"]].values
+
+    elif averaging == "geom":
+        add_geom_mean(df)
+        y = df.dropna()[[i for i in df.columns if i[:12]=="geom_mean_sp"]].values
+
+    dlogydt = df.dropna()[[i for i in df.columns if i[:6]=="dlogsp"]].values
+
+    reg.fit(y, dlogydt)
+
+    return reg.intercept_, reg.coef_
+
+
+def fit_ridge_cv(df, averaging="none"):
+    """
+    fit_ridge_cv: fit via sklearn.lm.RidgeCV
+            dependent variable: log(Δy/Δt), regressor: y, 
+            y = species abundances, t = time
+
+    --- INPUT ---
+    df: pandas DataFrame with data to be fit
+    averaging: how to take averages of y to use as regressor. string
+
+    --- OUTPUT ---
+    reg.intercept_: obtained growth rates
+    reg.coef_: obtained interaction matrix
+    """ 
+
+    add_log_time_diff(df) 
+
+    # reg = lm.RidgeCV(alphas=10.**np.arange(-5, 3))
+    reg = lm.RidgeCV()
 
     if averaging == "none":
         y = df.dropna()[[i for i in df.columns if i[:2]=="sp"]].values
