@@ -82,7 +82,7 @@ print(f"Number of datasets per file: {n_datasets}")
 print(f"Total number of datasets: {n_experiments*n_datasets}")
 
 data_size = (n_sp.sum()+5*len(n_sp)) * np.sum(n_samples) *  len(params_seeds) * len(env_noise_list) *\
-     len(meas_noise_list) * n_init_cond * repetitions * 18 / 1024**2
+    len(meas_noise_list) * n_init_cond * repetitions * 18 / 1024**2
 print(f"Expected total size: {data_size:.3f} MB")
 
 
