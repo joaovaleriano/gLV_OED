@@ -54,16 +54,16 @@ import re
 # n_init_cond = 100
 
 n_sp = np.array([10])
-n_samples = [11, 21, 31]
+n_samples = [31]
 t_samp_list = [np.linspace(0, 30, i) for i in n_samples]
 
-params_seeds = np.arange(2)
+params_seeds = np.arange(1)
 
 env_noise_list = [0.0, 0.05]
 meas_noise_list = [0.0]
 
-n_init_cond = 3
-repetitions = 1
+n_init_cond = 5
+repetitions = 5
 
 growth_scale = [0.1]
 
@@ -221,6 +221,73 @@ def n_comb(n, k):
 
 # Infer and score
 
+# for env_noise_k in env_noise_list:
+#     datapath = f"../experiment_outputs/{save_loc}_env_noise{env_noise_k}"
+#     log = h5py.File(f"{datapath}/data_generation_log.h5", "r")
+
+#     print(f"n_species = {log.attrs['n_species']}")
+#     print(f"avg_samp_dt = {log.attrs['avg_samp_dt']}")
+#     print(f"env_noise = {log.attrs['env_noise']}")
+#     print(f"meas_noise_list = {log.attrs['meas_noise_list']}")
+#     print(f"n_params_seeds = {log.attrs['n_params_seeds']}")
+
+#     env_noise = log.attrs['env_noise']
+
+#     for n_sp in log.attrs["n_species"]:
+#         for avg_samp_dt in log.attrs["avg_samp_dt"]:
+#             for meas_noise in log.attrs["meas_noise_list"]:
+#                 datafiles = get_files(datapath, n_sp, env_noise, meas_noise, avg_samp_dt)
+#                 metadatafiles = get_files(datapath, n_sp, env_noise, meas_noise, avg_samp_dt, "metadata", "txt")
+
+#                 for file_idx in range(len(datafiles)):
+#                     datafile = datafiles[file_idx]
+#                     metadatafile = metadatafiles[file_idx]
+#                     metadict = get_meta(open(metadatafile, "r").read().split("\n"))
+                    
+#                     df = pd.read_csv(datafile, index_col=0)
+                    
+#                     param_columns = [f"r{i}" for i in range(1, n_sp+1)] + \
+#                     [f"A{i},{j}" for i in range(1, n_sp+1) for j in range(1, n_sp+1)]
+#                     cols = ["n_dset"] + list(df.columns[1:5]) + param_columns + ["MSPD", "CSR", "ES"]
+
+#                     infer_out = pd.DataFrame(columns=cols)
+
+#                     pd.options.mode.chained_assignment = None
+                    
+#                     p = metadict["parameters"]
+#                     r = p[:n_sp]
+#                     A = p[n_sp:].reshape((n_sp,n_sp))
+
+#                     for i in tqdm(range(len(df.dataset.unique()))):
+#                     # for i in tqdm(range(30)):
+#                         if n_comb(len(df.dataset.unique()), i+1) < 10000:
+#                             combs = list(combinations(df.dataset.unique(), i+1))
+#                             np.random.shuffle(combs)
+#                             combs = combs[:100]
+#                         else:
+#                             combs = []
+#                             while len(combs) < 100:
+#                                 comb = tuple(np.random.choice(df.dataset.unique(), i+1, replace=False))
+#                                 if comb not in combs:
+#                                     combs.append(comb)
+#                         for comb in combs:
+#                             comb = np.random.choice(df.dataset.unique(), i+1, replace=False)
+#                             df_comb = df[df.dataset.isin(comb)]
+#                             r_est, A_est = fit_ridge_cv(df_comb)
+#                             # r_est, A_est = fit_lasso_cv(df_comb)
+#                             # r_est, A_est = fit_elasticnet_cv(df_comb)
+#                             p_est = np.concatenate((r_est, A_est.flatten()))
+#                             MSPD = ((p-p_est)**2).mean()
+#                             CSR = (np.sign(A_est)==np.sign(A)).mean()
+#                             ES = calculate_es_score(A, A_est)
+#                             infer_out.loc[len(infer_out)] = [i+1, comb, avg_samp_dt, meas_noise] + list(p_est) + [MSPD, CSR, ES]
+
+#                     infer_out.to_csv(datafile.split('dataset')[0]+"/inference"+datafile.split("dataset")[1])
+
+#%%
+
+# Infer and score
+
 for env_noise_k in env_noise_list:
     datapath = f"../experiment_outputs/{save_loc}_env_noise{env_noise_k}"
     log = h5py.File(f"{datapath}/data_generation_log.h5", "r")
@@ -248,7 +315,7 @@ for env_noise_k in env_noise_list:
                     
                     param_columns = [f"r{i}" for i in range(1, n_sp+1)] + \
                     [f"A{i},{j}" for i in range(1, n_sp+1) for j in range(1, n_sp+1)]
-                    cols = ["n_dset"] + list(df.columns[1:4]) + param_columns + ["MSPD", "CSR", "ES"]
+                    cols = ["n_dset"] + list(df.columns[1:5]) + param_columns + ["MSPD", "CSR", "ES"]
 
                     infer_out = pd.DataFrame(columns=cols)
 
@@ -258,28 +325,30 @@ for env_noise_k in env_noise_list:
                     r = p[:n_sp]
                     A = p[n_sp:].reshape((n_sp,n_sp))
 
-                    for i in tqdm(range(len(df.dataset.unique()))):
-                    # for i in tqdm(range(30)):
-                        if n_comb(len(df.dataset.unique()), i+1) < 10000:
-                            combs = list(combinations(df.dataset.unique(), i+1))
-                            np.random.shuffle(combs)
-                            combs = combs[:100]
-                        else:
-                            combs = []
-                            while len(combs) < 100:
-                                comb = tuple(np.random.choice(df.dataset.unique(), i+1, replace=False))
-                                if comb not in combs:
-                                    combs.append(comb)
-                        for comb in combs:
-                            comb = np.random.choice(df.dataset.unique(), i+1, replace=False)
-                            df_comb = df[df.dataset.isin(comb)]
-                            r_est, A_est = fit_ridge_cv(df_comb)
-                            # r_est, A_est = fit_lasso_cv(df_comb)
-                            # r_est, A_est = fit_elasticnet_cv(df_comb)
-                            p_est = np.concatenate((r_est, A_est.flatten()))
-                            MSPD = ((p-p_est)**2).mean()
-                            CSR = (np.sign(A_est)==np.sign(A)).mean()
-                            ES = calculate_es_score(A, A_est)
-                            infer_out.loc[len(infer_out)] = [i+1, comb, avg_samp_dt, meas_noise] + list(p_est) + [MSPD, CSR, ES]
+                    for init_cond_idx in df.init_cond_idx.unique():
+                        df_init_cond = df[df["init_cond_idx"]==init_cond_idx]
+                        for i in tqdm(range(len(df.dataset.unique()))):
+                        # for i in tqdm(range(30)):
+                            if n_comb(len(df.dataset.unique()), i+1) < 10000:
+                                combs = list(combinations(df.dataset.unique(), i+1))
+                                np.random.shuffle(combs)
+                                combs = combs[:100]
+                            else:
+                                combs = []
+                                while len(combs) < 100:
+                                    comb = tuple(np.random.choice(df.dataset.unique(), i+1, replace=False))
+                                    if comb not in combs:
+                                        combs.append(comb)
+                            for comb in combs:
+                                comb = np.random.choice(df.dataset.unique(), i+1, replace=False)
+                                df_comb = df[df.dataset.isin(comb)]
+                                r_est, A_est = fit_ridge_cv(df_comb)
+                                # r_est, A_est = fit_lasso_cv(df_comb)
+                                # r_est, A_est = fit_elasticnet_cv(df_comb)
+                                p_est = np.concatenate((r_est, A_est.flatten()))
+                                MSPD = ((p-p_est)**2).mean()
+                                CSR = (np.sign(A_est)==np.sign(A)).mean()
+                                ES = calculate_es_score(A, A_est)
+                                infer_out.loc[len(infer_out)] = [i+1, comb, avg_samp_dt, meas_noise] + list(p_est) + [MSPD, CSR, ES]
 
                     infer_out.to_csv(datafile.split('dataset')[0]+"/inference"+datafile.split("dataset")[1])
