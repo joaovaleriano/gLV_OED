@@ -148,7 +148,7 @@ for n_sp in log.attrs["n_species"]:
                             if comb not in combs:
                                 combs.append(comb)
                     for comb in combs:
-                        comb = np.random.choice(df.dataset.unique(), i+1, replace=False)
+                        # comb = np.random.choice(df.dataset.unique(), i+1, replace=False)
                         df_comb = df[df.dataset.isin(comb)]
                         r_est, A_est = fit_ridge_cv(df_comb)
                         # r_est, A_est = fit_lasso_cv(df_comb)

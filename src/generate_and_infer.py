@@ -29,11 +29,6 @@ sys.path.append("../src")
 from stochastic_glv_generator import *
 from experiments import *
 from analysis import *
-
-import sys
-sys.path.append("../src")
-
-from analysis import *
 from inference import *
 
 import re
@@ -54,16 +49,16 @@ import re
 # n_init_cond = 100
 
 n_sp = np.array([10])
-n_samples = [31]
+n_samples = [11, 21, 31, 51]
 t_samp_list = [np.linspace(0, 30, i) for i in n_samples]
 
-params_seeds = np.arange(1)
+params_seeds = np.arange(10)
 
-env_noise_list = [0.0, 0.05]
-meas_noise_list = [0.0]
+env_noise_list = [0.1]
+meas_noise_list = [0.1]
 
-n_init_cond = 5
-repetitions = 5
+n_init_cond = 20
+repetitions = 20
 
 growth_scale = [0.1]
 
@@ -248,7 +243,7 @@ def n_comb(n, k):
                     
 #                     param_columns = [f"r{i}" for i in range(1, n_sp+1)] + \
 #                     [f"A{i},{j}" for i in range(1, n_sp+1) for j in range(1, n_sp+1)]
-#                     cols = ["n_dset"] + list(df.columns[1:5]) + param_columns + ["MSPD", "CSR", "ES"]
+#                     cols = ["n_dset"] + list(df.columns[1:4]) + param_columns + ["MSPD", "CSR", "ES"]
 
 #                     infer_out = pd.DataFrame(columns=cols)
 
@@ -286,6 +281,10 @@ def n_comb(n, k):
 
 #%%
 
+comb_type = "init_cond"
+if len(sys.argv) > 3:
+    comb_type = sys.argv[3]
+
 # Infer and score
 
 for env_noise_k in env_noise_list:
@@ -315,9 +314,9 @@ for env_noise_k in env_noise_list:
                     
                     param_columns = [f"r{i}" for i in range(1, n_sp+1)] + \
                     [f"A{i},{j}" for i in range(1, n_sp+1) for j in range(1, n_sp+1)]
-                    cols = ["n_dset"] + list(df.columns[1:5]) + param_columns + ["MSPD", "CSR", "ES"]
+                    # cols = ["n_dset"] + list(df.columns[1:4]) + param_columns + ["MSPD", "CSR", "ES"]
 
-                    infer_out = pd.DataFrame(columns=cols)
+                    # infer_out = pd.DataFrame(columns=cols)
 
                     pd.options.mode.chained_assignment = None
                     
@@ -325,30 +324,75 @@ for env_noise_k in env_noise_list:
                     r = p[:n_sp]
                     A = p[n_sp:].reshape((n_sp,n_sp))
 
-                    for init_cond_idx in df.init_cond_idx.unique():
-                        df_init_cond = df[df["init_cond_idx"]==init_cond_idx]
-                        for i in tqdm(range(len(df.dataset.unique()))):
-                        # for i in tqdm(range(30)):
-                            if n_comb(len(df.dataset.unique()), i+1) < 10000:
-                                combs = list(combinations(df.dataset.unique(), i+1))
-                                np.random.shuffle(combs)
-                                combs = combs[:100]
-                            else:
-                                combs = []
-                                while len(combs) < 100:
-                                    comb = tuple(np.random.choice(df.dataset.unique(), i+1, replace=False))
-                                    if comb not in combs:
-                                        combs.append(comb)
-                            for comb in combs:
-                                comb = np.random.choice(df.dataset.unique(), i+1, replace=False)
-                                df_comb = df[df.dataset.isin(comb)]
-                                r_est, A_est = fit_ridge_cv(df_comb)
-                                # r_est, A_est = fit_lasso_cv(df_comb)
-                                # r_est, A_est = fit_elasticnet_cv(df_comb)
-                                p_est = np.concatenate((r_est, A_est.flatten()))
-                                MSPD = ((p-p_est)**2).mean()
-                                CSR = (np.sign(A_est)==np.sign(A)).mean()
-                                ES = calculate_es_score(A, A_est)
-                                infer_out.loc[len(infer_out)] = [i+1, comb, avg_samp_dt, meas_noise] + list(p_est) + [MSPD, CSR, ES]
+                    if comb_type == "init_cond":
+                        cols = ["n_init_cond", "rep_idx", "init_cond_comb"] + list(df.columns[2:4]) + param_columns + ["MSPD", "CSR", "ES"]
+                        infer_out = pd.DataFrame(columns=cols)
 
-                    infer_out.to_csv(datafile.split('dataset')[0]+"/inference"+datafile.split("dataset")[1])
+                        for j in tqdm(range(len(df.replicate.unique()))):
+                            df_rep = df[df["replicate"]==df.replicate.unique()[j]]
+                            for i in tqdm(range(len(df.init_cond_idx.unique()))):
+                            # for i in tqdm(range(30)):
+                                if n_comb(len(df.init_cond_idx.unique()), i+1) < 10000:
+                                    combs = list(combinations(df.init_cond_idx.unique(), i+1))
+                                    np.random.shuffle(combs)
+                                    combs = combs[:100]
+                                else:
+                                    combs = []
+                                    while len(combs) < 100:
+                                        comb = tuple(np.random.choice(df.init_cond_idx.unique(), i+1, replace=False))
+                                        if comb not in combs:
+                                            combs.append(comb)
+                                for comb in combs:
+                                    # comb = np.random.choice(df.dataset.unique(), i+1, replace=False)
+                                    df_comb = df_rep[df_rep.init_cond_idx.isin(comb)]
+                                    r_est, A_est = fit_ridge_cv(df_comb)
+                                    # r_est, A_est = fit_lasso_cv(df_comb)
+                                    # r_est, A_est = fit_elasticnet_cv(df_comb)
+                                    p_est = np.concatenate((r_est, A_est.flatten()))
+                                    MSPD = ((p-p_est)**2).mean()
+                                    CSR = (np.sign(A_est)==np.sign(A)).mean()
+                                    ES = calculate_es_score(A, A_est)
+                                    infer_out.loc[len(infer_out)] = [i+1, df.replicate.unique()[j], comb, avg_samp_dt, meas_noise] + list(p_est) + [MSPD, CSR, ES]
+
+                            infer_out.to_csv(datafile.split('dataset')[0]+f"/inference_{comb_type}_"+datafile.split("dataset")[1])
+                            # infer_out.to_csv(datafile.split('dataset')[0]+"/inference_alphas"+datafile.split("dataset")[1])
+                            # infer_out.to_csv(datafile.split('dataset')[0]+"/inference_lasso"+datafile.split("dataset")[1])
+                            # infer_out.to_csv(datafile.split('dataset')[0]+"/inference_elasticnet"+datafile.split("dataset")[1])
+
+                    elif comb_type == "rep":
+                        cols = ["n_rep", "init_cond_idx", "replicate_comb"] + list(df.columns[2:4]) + param_columns + ["MSPD", "CSR", "ES"]
+                        infer_out = pd.DataFrame(columns=cols)
+
+                        # for i in tqdm(range(30)):
+                        for i in range(len(df.init_cond_idx.unique())):
+                            df_init_cond = df[df["init_cond_idx"]==df["init_cond_idx"].unique()[i]]
+                            for j in tqdm(range(len(df.replicate.unique()))):
+                                if n_comb(len(df.replicate.unique()), j+1) < 10000:
+                                    combs = list(combinations(df.replicate.unique(), j+1))
+                                    np.random.shuffle(combs)
+                                    combs = combs[:100]
+                                else:
+                                    combs = []
+                                    while len(combs) < 100:
+                                        comb = tuple(np.random.choice(df.   replicate.unique(), j+1, replace=False))
+                                        if comb not in combs:
+                                            combs.append(comb)
+                                for comb in combs:
+                                    # comb = np.random.choice(df.replicate.unique(), j+1, replace=False)
+                                    df_comb = df_init_cond[df_init_cond.replicate.isin(comb)]
+                                    r_est, A_est = fit_ridge_cv(df_comb)
+                                    # r_est, A_est = fit_lasso_cv(df_comb)
+                                    # r_est, A_est = fit_elasticnet_cv(df_comb)
+                                    p_est = np.concatenate((r_est, A_est.flatten()))
+                                    MSPD = ((p-p_est)**2).mean()
+                                    CSR = (np.sign(A_est)==np.sign(A)).mean()
+                                    ES = calculate_es_score(A, A_est)
+                                    infer_out.loc[len(infer_out)] = [j+1, df.init_cond_idx.unique()[i], comb, avg_samp_dt, meas_noise] + list(p_est) + [MSPD, CSR, ES]
+
+                            infer_out.to_csv(datafile.split('dataset')[0]+f"/inference_{comb_type}_"+datafile.split("dataset")[1])
+                            # infer_out.to_csv(datafile.split('dataset')[0]+"/inference_alphas"+datafile.split("dataset")[1])
+                            # infer_out.to_csv(datafile.split('dataset')[0]+"/inference_lasso"+datafile.split("dataset")[1])
+                            # infer_out.to_csv(datafile.split('dataset')[0]+"/
+
+                    else:
+                        print("ERROR: Invalid comb_type -- inference cancelled.")
