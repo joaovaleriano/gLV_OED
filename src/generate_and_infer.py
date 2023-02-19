@@ -49,13 +49,13 @@ import re
 # n_init_cond = 100
 
 n_sp = np.array([10])
-n_samples = [11, 21, 31, 51]
+n_samples = [11, 21, 31]
 t_samp_list = [np.linspace(0, 30, i) for i in n_samples]
 
 params_seeds = np.arange(10)
 
-env_noise_list = [0.1]
-meas_noise_list = [0.1]
+env_noise_list = [0.0, 0.05, 0.1]
+meas_noise_list = [0.0, 0.1, 0.2]
 
 n_init_cond = 20
 repetitions = 20

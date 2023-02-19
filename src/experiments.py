@@ -105,11 +105,12 @@ def gen_experiment(p, init_cond, t0, dt, t_samp, env_noise, meas_noise, env_seed
     system = euler_maruyama(glv, t0, x0, p, env_noise, dt, t_samp, env_seed)
 
     if scale_meas_noise_by_abund:
-        scaled_meas_noise = meas_noise*system
+        scaled_meas_noise = np.sqrt(system*meas_noise*(1-meas_noise)/1e9)
+        # scaled_meas_noise = system*meas_noise
     else:
         scaled_meas_noise = meas_noise
 
-    data = measurement(t_samp, t_samp, system, scaled_meas_noise, meas_seed)
+    data = measurement(t_samp, t_samp, system*(1-meas_noise), scaled_meas_noise, meas_seed)
 
     return data
 
