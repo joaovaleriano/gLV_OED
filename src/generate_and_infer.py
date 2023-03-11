@@ -52,13 +52,13 @@ n_sp = np.array([10])
 n_samples = [11, 21, 31]
 t_samp_list = [np.linspace(0, 30, i) for i in n_samples]
 
-params_seeds = np.arange(10)
+params_seeds = np.arange(3)
 
-env_noise_list = [0.0, 0.05, 0.1]
-meas_noise_list = [0.0, 0.1, 0.2]
+env_noise_list = [0.1]
+meas_noise_list = [0.1]
 
-n_init_cond = 20
-repetitions = 20
+n_init_cond = 5
+repetitions = 5
 
 growth_scale = [0.1]
 
@@ -345,8 +345,9 @@ for env_noise_k in env_noise_list:
                                 for comb in combs:
                                     # comb = np.random.choice(df.dataset.unique(), i+1, replace=False)
                                     df_comb = df_rep[df_rep.init_cond_idx.isin(comb)]
-                                    r_est, A_est = fit_ridge_cv(df_comb)
-                                    # r_est, A_est = fit_lasso_cv(df_comb)
+                                    # r_est, A_est = fit_ridge_cv(df_comb)
+                                    # r_est, A_est = fit_lr(df_comb)
+                                    r_est, A_est = fit_lasso_cv(df_comb)
                                     # r_est, A_est = fit_elasticnet_cv(df_comb)
                                     p_est = np.concatenate((r_est, A_est.flatten()))
                                     MSPD = ((p-p_est)**2).mean()
@@ -354,9 +355,10 @@ for env_noise_k in env_noise_list:
                                     ES = calculate_es_score(A, A_est)
                                     infer_out.loc[len(infer_out)] = [i+1, df.replicate.unique()[j], comb, avg_samp_dt, meas_noise] + list(p_est) + [MSPD, CSR, ES]
 
-                            infer_out.to_csv(datafile.split('dataset')[0]+f"/inference_{comb_type}_"+datafile.split("dataset")[1])
+                            # infer_out.to_csv(datafile.split('dataset')[0]+f"/inference_{comb_type}_"+datafile.split("dataset")[1])
+                            # infer_out.to_csv(datafile.split('dataset')[0]+f"/inference_lr_{comb_type}_"+datafile.split("dataset")[1])
                             # infer_out.to_csv(datafile.split('dataset')[0]+"/inference_alphas"+datafile.split("dataset")[1])
-                            # infer_out.to_csv(datafile.split('dataset')[0]+"/inference_lasso"+datafile.split("dataset")[1])
+                            infer_out.to_csv(datafile.split('dataset')[0]+"/inference_lasso"+datafile.split("dataset")[1])
                             # infer_out.to_csv(datafile.split('dataset')[0]+"/inference_elasticnet"+datafile.split("dataset")[1])
 
                     elif comb_type == "rep":
@@ -380,8 +382,9 @@ for env_noise_k in env_noise_list:
                                 for comb in combs:
                                     # comb = np.random.choice(df.replicate.unique(), j+1, replace=False)
                                     df_comb = df_init_cond[df_init_cond.replicate.isin(comb)]
-                                    r_est, A_est = fit_ridge_cv(df_comb)
-                                    # r_est, A_est = fit_lasso_cv(df_comb)
+                                    # r_est, A_est = fit_ridge_cv(df_comb)
+                                    # r_est, A_est = fit_lr(df_comb)
+                                    r_est, A_est = fit_lasso_cv(df_comb)
                                     # r_est, A_est = fit_elasticnet_cv(df_comb)
                                     p_est = np.concatenate((r_est, A_est.flatten()))
                                     MSPD = ((p-p_est)**2).mean()
@@ -389,9 +392,10 @@ for env_noise_k in env_noise_list:
                                     ES = calculate_es_score(A, A_est)
                                     infer_out.loc[len(infer_out)] = [j+1, df.init_cond_idx.unique()[i], comb, avg_samp_dt, meas_noise] + list(p_est) + [MSPD, CSR, ES]
 
-                            infer_out.to_csv(datafile.split('dataset')[0]+f"/inference_{comb_type}_"+datafile.split("dataset")[1])
+                            # infer_out.to_csv(datafile.split('dataset')[0]+f"/inference_{comb_type}_"+datafile.split("dataset")[1])
+                            # infer_out.to_csv(datafile.split('dataset')[0]+f"/inference_lr_{comb_type}_"+datafile.split("dataset")[1])
                             # infer_out.to_csv(datafile.split('dataset')[0]+"/inference_alphas"+datafile.split("dataset")[1])
-                            # infer_out.to_csv(datafile.split('dataset')[0]+"/inference_lasso"+datafile.split("dataset")[1])
+                            infer_out.to_csv(datafile.split('dataset')[0]+"/inference_lasso"+datafile.split("dataset")[1])
                             # infer_out.to_csv(datafile.split('dataset')[0]+"/
 
                     else:

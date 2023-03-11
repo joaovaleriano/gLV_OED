@@ -190,6 +190,9 @@ def sort_glv_params(n, seed, r_max, A_diag_mean, A_diag_std, A_off_diag_std):
     r = np.random.uniform(0, r_max, n)
     A = np.random.normal(scale=A_off_diag_std, size=(n,n))
     A -= np.eye(n)*A + np.diag(np.random.normal(A_diag_mean, A_diag_std, n))
+    # C = np.random.randint(0, 1, (n, n)).astype(np.float64)
+    # C -= np.eye(n)*C - np.eye(n)
+    # A = A*C
 
     mat_c = 0
     while (-np.linalg.inv(A)@r < 0).any() or (np.linalg.eig(-np.linalg.inv(A)@r.reshape((-1,1))*A)[0]>0).any():
@@ -198,6 +201,9 @@ def sort_glv_params(n, seed, r_max, A_diag_mean, A_diag_std, A_off_diag_std):
         # print(f"generating stable matrix ... {mat_c}", end="")
         A = np.random.normal(scale=A_off_diag_std, size=(n,n))
         A -= np.eye(n)*A + np.diag(np.random.normal(A_diag_mean, A_diag_std, n))
+        # C = np.random.randint(0, 1, (n, n)).astype(np.float64)
+        # C -= np.eye(n)*C - np.eye(n)
+        # A = A*C
 
     p = np.concatenate((r, A.flatten()))
 
